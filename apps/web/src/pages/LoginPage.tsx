@@ -36,14 +36,14 @@ export default function LoginPage() {
 
   return (
     <div className="auth-card">
-      <div className="auth-heading"><span className="auth-kicker">QUÉ BUENO TENERTE DE VUELTA</span><h2>Inicia sesión</h2><p>Accede a tus documentos y continúa donde lo dejaste.</p></div>
+      <div className="auth-heading"><span className="auth-kicker">¡QUÉ BUENO TENERTE DE VUELTA!</span><h2>Inicia sesión</h2><p>Accede a tus documentos y continúa donde lo dejaste.</p></div>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <FormField label="Correo electrónico" type="email" placeholder="nombre@correo.com" autoComplete="email" leadingIcon={<Mail size={18} />} error={errors.email?.message} {...register("email")} />
         <div className="password-field">
           <FormField label="Contraseña" type={showPassword ? "text" : "password"} placeholder="Tu contraseña" autoComplete="current-password" leadingIcon={<LockKeyhole size={18} />} error={errors.password?.message} {...register("password")} />
           <button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
         </div>
-        <div className="form-options"><span /> <Link to="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link></div>
+        {/* <div className="form-options"><span /> <Link to="/recuperar-contrasena">¿Olvidaste tu contraseña?</Link></div> */}
         {serverError && <p className="form-alert" role="alert">{serverError}</p>}
         <button className="button button-primary button-full" type="submit" disabled={submitting}>{submitting ? "Entrando..." : "Iniciar sesión"} <ArrowRight size={17} /></button>
       </form>

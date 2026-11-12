@@ -10,7 +10,12 @@ import FormField from "../components/ui/FormField";
 const schema = z.object({
   name: z.string().trim().min(2, "Escribe tu nombre (mínimo 2 caracteres)."),
   email: z.string().email("Introduce un correo electrónico válido."),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+  password: z
+  .string()
+  .min(8, "La contraseña debe tener al menos 8 caracteres")
+  .regex(/\p{L}/u, "Debe contener al menos una letra")
+  .regex(/[0-9]/, "Debe contener al menos un número")
+  .regex(/[\p{P}\p{S}]/u, "Debe contener al menos un símbolo"),
   confirmPassword: z.string(),
 }).refine((values) => values.password === values.confirmPassword, {
   message: "Las contraseñas no coinciden.",
@@ -46,7 +51,7 @@ export default function RegisterPage() {
         <FormField label="Nombre completo" placeholder="Tu nombre" autoComplete="name" leadingIcon={<UserRound size={18} />} error={errors.name?.message} {...register("name")} />
         <FormField label="Correo electrónico" type="email" placeholder="nombre@correo.com" autoComplete="email" leadingIcon={<Mail size={18} />} error={errors.email?.message} {...register("email")} />
         <div className="password-field">
-          <FormField label="Contraseña" type={showPassword ? "text" : "password"} placeholder="Mínimo 8 caracteres" autoComplete="new-password" leadingIcon={<LockKeyhole size={18} />} error={errors.password?.message} {...register("password")} />
+          <FormField label="Contraseña" type={showPassword ? "text" : "password"} placeholder="Introduce una contraseña segura" autoComplete="new-password" leadingIcon={<LockKeyhole size={18} />} error={errors.password?.message} {...register("password")} />
           <button type="button" className="password-toggle" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>{showPassword ? <EyeOff size={17} /> : <Eye size={17} />}</button>
         </div>
         <FormField label="Confirmar contraseña" type="password" placeholder="Repite tu contraseña" autoComplete="new-password" leadingIcon={<LockKeyhole size={18} />} error={errors.confirmPassword?.message} {...register("confirmPassword")} />
