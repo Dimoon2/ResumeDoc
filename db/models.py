@@ -33,4 +33,7 @@ class User(SQLModel, table=True):
     rol: Rol = Field(default=Rol.NOADMIN)
 
     #relacion  subido por 
-    documentos: list["Documento"] = Relationship(back_populates="usuario")
+    documentos: list["Documento"] = Relationship(
+        back_populates="usuario",
+        sa_relationship_kwargs={"passive_deletes": "all"},
+    )
