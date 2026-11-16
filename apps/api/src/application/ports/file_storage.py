@@ -18,6 +18,10 @@ class FileStorage(Protocol):
         """Store extracted text in the temp folder; return its location (D-25)."""
         ...
 
+    def write_text(self, location: str, content: str) -> None:
+        """Overwrite previously stored text at its location (edited text)."""
+        ...
+
     def read_text(self, location: str) -> str:
         """Return the text stored at a location."""
         ...

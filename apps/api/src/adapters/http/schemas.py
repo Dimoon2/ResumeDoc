@@ -106,3 +106,7 @@ class RenameDocumentRequest(BaseModel):
         if len(stripped) > 255:
             raise ValueError("El nombre no puede exceder 255 caracteres.")
         return stripped
+
+
+class UpdateTextRequest(BaseModel):
+    text: str

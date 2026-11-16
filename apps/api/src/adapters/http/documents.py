@@ -15,6 +15,7 @@ from src.adapters.http.schemas import (
     DocumentResponse,
     DocumentStatusResponse,
     RenameDocumentRequest,
+    UpdateTextRequest,
     UploadedDocumentResponse,
 )
 from src.application.ports.document_repository import DocumentRepository
@@ -23,7 +24,12 @@ from src.application.ports.file_storage import FileStorage
 from src.application.ports.task_queue import TaskQueue
 from src.application.usecases import documents as document_usecases
 from src.core.config import get_settings
-from src.domain.document import Document, DocumentTooLarge, DocumentUploadError
+from src.domain.document import (
+    Document,
+    DocumentState,
+    DocumentTooLarge,
+    DocumentUploadError,
+)
 from src.domain.user import AuthContext
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -154,11 +160,46 @@ def delete_document(
     states: DocumentStateStore = Depends(get_state_store),
     storage: FileStorage = Depends(get_storage),
 ) -> None:
-    """Delete the record, the stored binary and the pipeline state (D-24)."""
+    """Delete the record, the stored binary and the pipeline state (D-24);
+    409 while the worker is processing it (D-15)."""
     document = _accessible_document(repository.get_document(document_id), user)
+    state = states.get(document_id)
+    if state is not None and state.status == "processing":
+        raise HTTPException(
+            status_code=409,
+            detail="El documento está en procesamiento; no se puede eliminar.",
+        )
     repository.delete_document(document_id)
     storage.delete(document.location)
     states.delete(document_id)
+
+
+@router.put("/{document_id}/text", status_code=204)
+def update_document_text(
+    document_id: int,
+    payload: UpdateTextRequest,
+    user: AuthContext = Depends(current_user),
+    repository: DocumentRepository = Depends(get_repository),
+    states: DocumentStateStore = Depends(get_state_store),
+    storage: FileStorage = Depends(get_storage),
+) -> None:
+    """Edited text overwrites the original extraction file (D-25/D-11);
+    only completed documents are editable (D-10)."""
+    _accessible_document(repository.get_document(document_id), user)
+    state = states.get(document_id)
+    if state is None or state.status != "completed":
+        raise HTTPException(
+            status_code=409,
+            detail="Solo se puede editar el texto de un documento completado.",
+        )
+    if state.text_path:
+        storage.write_text(state.text_path, payload.text)
+    else:
+        # Texto original vacío (D-09): la primera edición crea el archivo.
+        states.set(
+            document_id,
+            DocumentState("completed", text_path=storage.save_text(payload.text)),
+        )
 
 
 @router.get("/{document_id}/status", response_model=DocumentStatusResponse)

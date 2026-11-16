@@ -35,6 +35,9 @@ class FilesystemStorage:
     def read_text(self, location: str) -> str:
         return (self._root / location).read_text(encoding="utf-8")
 
+    def write_text(self, location: str, content: str) -> None:
+        (self._root / location).write_text(content, encoding="utf-8")
+
     def delete(self, location: str) -> None:
         try:
             (self._root / location).unlink(missing_ok=True)

@@ -147,6 +147,83 @@ def test_rename_document(client: TestClient) -> None:
     assert empty.status_code == 422
 
 
+def test_delete_processing_is_409(client: TestClient) -> None:
+    from src.domain.document import DocumentState
+
+    upload = client.post(
+        "/documents", headers=_auth(client),
+        files={"file": ("enproceso.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+    app.state.state_store.set(document_id, DocumentState("processing"))
+
+    deleted = client.delete(f"/documents/{document_id}", headers=_auth(client))
+    assert deleted.status_code == 409
+    assert "procesamiento" in deleted.json()["detail"]
+    # El documento sigue existiendo y su binario intacto.
+    assert client.get(f"/documents/{document_id}", headers=_auth(client)).status_code == 200
+
+
+def test_put_text_overwrites_original(client: TestClient) -> None:
+    upload = client.post(
+        "/documents", headers=_auth(client),
+        files={"file": ("editable.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+
+    edited = client.put(
+        f"/documents/{document_id}/text", headers=_auth(client), json={"text": "texto editado por el usuario"}
+    )
+    assert edited.status_code == 204
+
+    text = client.get(f"/documents/{document_id}/text", headers=_auth(client))
+    assert text.status_code == 200
+    assert text.text == "texto editado por el usuario"
+
+    # La segunda edición vuelve a sobreescribir el mismo archivo.
+    client.put(
+        f"/documents/{document_id}/text", headers=_auth(client), json={"text": "segunda edición"}
+    )
+    assert client.get(f"/documents/{document_id}/text", headers=_auth(client)).text == "segunda edición"
+
+    # Sin estado (pending) → 409; documento ajeno → 404.
+    orphan = app.state.repository.create_document(
+        Document(name="p.pdf", location="x.pdf", size_bytes=1, owner_id=1)
+    )
+    pending = client.put(
+        f"/documents/{orphan.id}/text", headers=_auth(client), json={"text": "x"}
+    )
+    assert pending.status_code == 409
+
+    other = _second_user(client)
+    foreign = client.put(
+        f"/documents/{document_id}/text", headers=other, json={"text": "x"}
+    )
+    assert foreign.status_code == 404
+
+
+def test_put_text_on_empty_completed_creates_file(client: TestClient) -> None:
+    from src.domain.document import DocumentState
+
+    upload = client.post(
+        "/documents", headers=_auth(client),
+        files={"file": ("vacio.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+    # D-09: pipeline completado con texto vacío → text_path "".
+    app.state.state_store.set(document_id, DocumentState("completed"))
+
+    edited = client.put(
+        f"/documents/{document_id}/text", headers=_auth(client), json={"text": "primera edición"}
+    )
+    assert edited.status_code == 204
+
+    text = client.get(f"/documents/{document_id}/text", headers=_auth(client))
+    assert text.status_code == 200
+    assert text.text == "primera edición"
+    assert app.state.state_store.get(document_id).text_path != ""  # type: ignore[union-attr]
+
+
 def test_delete_removes_record_file_and_state(client: TestClient) -> None:
     upload = client.post(
         "/documents", headers=_auth(client),
