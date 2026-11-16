@@ -12,55 +12,100 @@ arquitectura hexagonal, cola Celery/Redis y PostgreSQL (rama `data-base`).
 | 1 — Autenticación | T-03…T-05 | JWT (access 30 min / refresh 7 días) + bcrypt, login/registro/me/logout, cookie HttpOnly, bootstrap del primer admin por env, tests |
 | 2 — Subida | T-06…T-10 | `POST /documents` (validación extensión/vacío/20 MB → 201 `{id, status:"pending"}`), guardado `{uuid}.{ext}`, puerto `DocumentRepository` + doble en memoria, encolado por Celery con **compensación si el broker falla** (sin huérfanos en BD ni disco) |
 | 3 — Pipeline | T-11…T-17 | Máquina de estados en Redis (`pending → processing → completed/error`), worker Celery con `soft_time_limit` (5 min) y hook de huérfanos al arrancar, PDF: capa textual pypdf + OCR por página sin texto, PDF cifrado → error, > 100 páginas → error, `GET /documents/{id}/status` (polling, 404 uniforme) |
-| 4 — Integración | T-18, T-19 | Adaptador SQLModel real (modelos vendidos verbatim de `data-base`; al fusionar, sustituir por su paquete `db/` + Alembic), pruebas de integración auto-skipped sin infra |
+| 4 — Integración | T-18, T-19 | Adaptador SQLModel real sobre el paquete `db/` del equipo de datos (fusionado de `data-base`, migraciones Alembic activas), pruebas de integración auto-skipped sin infra |
 
 Suite: **73 passed, 3 skipped · pyright 0 errores** (los 3 skips son las
 pruebas de integración, que solo corren con infra real).
 
 ## Cómo levantar el backend
 
-Requisitos: Python 3.12+, Redis y PostgreSQL 17. Sin BD real funciona con
-`DATABASE_URL=memory://` (doble en memoria; lo usan los tests).
+Requisitos: Python 3.14+, Redis y PostgreSQL 17 (vía Docker). Con
+`DATABASE_URL=memory://` la API corre sin BD (doble en memoria; lo usan
+los tests unitarios).
+
+### 1. Entorno virtual
 
 ```bash
 cd apps/api
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env    # rellena TODAS las variables; sin .env no arranca
 ```
 
-Infraestructura local (el `docker-compose.yml` es local y no se versiona):
+### 2. Variables de entorno
+
+```bash
+cp .env.example .env
+```
+
+Rellena **TODAS** las variables: sin `.env` completo no arranca (fail-fast
+con mensaje en español). Las dos que dependen del equipo:
+
+- `DATABASE_URL` — la BD compartida es **Neon** (pedir la URL al
+  responsable de datos) o un Postgres local (paso 3).
+- `REDIS_URL` — `redis://localhost:6379/0` con el contenedor de abajo.
+
+### 3. Infraestructura local (solo si no usas la BD del equipo)
 
 ```bash
 docker run -d --name resumedoc_redis -p 6379:6379 redis:7
 docker run -d --name resumedoc_db -p 5434:5432 \
   -e POSTGRES_USER=resumedoc -e POSTGRES_PASSWORD=resumedoc \
   -e POSTGRES_DB=resumedoc postgres:17
-# nota: el 5434 es porque el 5432 de esta máquina ya está ocupado
 ```
 
-Dos procesos separados (la API encola, el worker procesa):
+### 4. Migraciones (solo si la BD es local o recién creada)
+
+Alembic vive en la **raíz del repo** y lee `DATABASE_URL` del entorno:
 
 ```bash
-venv/bin/python -m uvicorn src.main:app --reload          # API en :8000
-venv/bin/celery -A src.worker:celery_app worker --loglevel=info
+cd ../..
+DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc \
+  alembic upgrade head
 ```
 
-Primer admin (bootstrap, nunca vía endpoint):
+La BD de Neon del equipo **ya está migrada**: no ejecutar migraciones contra
+ella sin hablar antes con quien la gestiona.
+
+### 5. Arrancar API y worker
+
+Son **dos procesos** (la API encola, el worker procesa) y ambos necesitan
+`PYTHONPATH=..`, porque el paquete `db/` con los modelos vive en la raíz
+del repo, no dentro de `apps/api`:
+
+```bash
+cd apps/api
+PYTHONPATH=.. venv/bin/python -m uvicorn src.main:app --reload   # API en :8000
+PYTHONPATH=.. venv/bin/celery -A src.worker:celery_app worker --loglevel=info
+```
+
+Verificación rápida: `curl http://localhost:8000/health` →
+`{"status":"ok",...}`.
+
+### 6. Primer admin (bootstrap, nunca vía endpoint)
 
 ```bash
 ADMIN_EMAIL=root@correo.com ADMIN_PASSWORD=<una-clave-fuerte> \
-  venv/bin/python -m uvicorn src.main:app
+  PYTHONPATH=.. venv/bin/python -m uvicorn src.main:app
 ```
 
-Pruebas:
+### 7. Pruebas
 
 ```bash
-venv/bin/pytest                 # suite completa
-venv/bin/pyright                # tipos
-# integración real (requiere BD + Redis levantados):
-INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc \
-INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest
+venv/bin/pytest          # suite completa (73 tests)
+venv/bin/pyright         # tipos (0 errores esperados)
+```
+
+Las de integración van contra una BD real; usa una BD de pruebas, no la
+compartida. Receta con una BD `resumedoc_test` en el contenedor local:
+
+```bash
+docker exec resumedoc_db psql -U resumedoc -d postgres -c "CREATE DATABASE resumedoc_test;"
+cd ../..
+DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
+  apps/api/venv/bin/python -m alembic upgrade head
+cd apps/api
+INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
+INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest tests/test_integration_db.py
 ```
 
 ## Variables de entorno
@@ -107,5 +152,7 @@ ORM toca solo `adapters/persistence/`; cambiar de OCR, solo
 - Cookie `secure=True` para producción HTTPS (setting pendiente).
 - Purgar `requirements.txt` (solo se usan ~16 dependencias directas).
 - Zona admin (T-A4) y concesiones: sin implementar.
-- Al fusionar con `data-base`: borrar `orm.py`, importar su `db/` y pasar a
-  Alembic (hoy las tablas se crean con `create_all`, solo desarrollo).
+- El `PYTHONPATH=..` es un parche: decidir en equipo si `db/` se mueve a
+  `apps/api/` o se empaqueta (pip install -e) y quitar el parche.
+- `db/engine.py` tiene `echo=True`: loguea cada SQL (incluidos datos) —
+  apagarlo para producción.
