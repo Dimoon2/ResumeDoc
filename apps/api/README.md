@@ -69,13 +69,13 @@ ella sin hablar antes con quien la gestiona.
 ### 5. Arrancar API y worker
 
 Son **dos procesos** (la API encola, el worker procesa) y ambos necesitan
-`PYTHONPATH=..`, porque el paquete `db/` con los modelos vive en la raíz
-del repo, no dentro de `apps/api`:
+`PYTHONPATH=../..`, porque el paquete `db/` con los modelos vive en la
+raíz del repo, **dos niveles** arriba de `apps/api`:
 
 ```bash
 cd apps/api
-PYTHONPATH=.. venv/bin/python -m uvicorn src.main:app --reload   # API en :8000
-PYTHONPATH=.. venv/bin/celery -A src.worker:celery_app worker --loglevel=info
+PYTHONPATH=../.. venv/bin/python -m uvicorn src.main:app --reload   # API en :8000
+PYTHONPATH=../.. venv/bin/celery -A src.worker:celery_app worker --loglevel=info
 ```
 
 Verificación rápida: `curl http://localhost:8000/health` →
@@ -85,7 +85,7 @@ Verificación rápida: `curl http://localhost:8000/health` →
 
 ```bash
 ADMIN_EMAIL=root@correo.com ADMIN_PASSWORD=<una-clave-fuerte> \
-  PYTHONPATH=.. venv/bin/python -m uvicorn src.main:app
+  PYTHONPATH=../.. venv/bin/python -m uvicorn src.main:app
 ```
 
 ### 7. Pruebas
@@ -152,7 +152,7 @@ ORM toca solo `adapters/persistence/`; cambiar de OCR, solo
 - Cookie `secure=True` para producción HTTPS (setting pendiente).
 - Purgar `requirements.txt` (solo se usan ~16 dependencias directas).
 - Zona admin (T-A4) y concesiones: sin implementar.
-- El `PYTHONPATH=..` es un parche: decidir en equipo si `db/` se mueve a
+- El `PYTHONPATH=../..` es un parche: decidir en equipo si `db/` se mueve a
   `apps/api/` o se empaqueta (pip install -e) y quitar el parche.
 - `db/engine.py` tiene `echo=True`: loguea cada SQL (incluidos datos) —
   apagarlo para producción.
