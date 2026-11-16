@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import create_engine
 from sqlmodel import Session, select
 
-from src.adapters.persistence.orm import Documento, Rol, User
+from db.models import Documento, Rol, User
 from src.domain.document import Document
 from src.domain.user import EmailAlreadyRegistered, Role, User as DomainUser
 
