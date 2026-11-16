@@ -12,7 +12,7 @@ import pytest
 from sqlalchemy import create_engine, delete
 from sqlmodel import Session
 
-from src.adapters.persistence.orm import User as OrmUser
+from db.models import User as OrmUser
 from src.adapters.persistence.redis_state import RedisDocumentStateStore
 from src.adapters.persistence.sqlmodel_repo import SQLModelDocumentRepository
 from src.domain.document import Document, DocumentState

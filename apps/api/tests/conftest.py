@@ -1,5 +1,13 @@
 """Shared test environment for the ResumeDoc API test suite."""
 
+import sys
+from pathlib import Path
+
+# Raíz del repo: el paquete `db/` (modelos del equipo de datos) vive ahí.
+# Un `pythonpath = ..` del ini no vale: pytest inserta la ruta sin
+# normalizar y Python 3.14 no resuelve entradas con `..`.
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+
 import pytest
 
 from src.core.config import get_settings
