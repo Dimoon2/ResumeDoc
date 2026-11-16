@@ -24,3 +24,7 @@ class DocumentStateStore(Protocol):
         """Mark every document stuck in `processing` as error (D-16 orphans);
         return how many were marked."""
         ...
+
+    def delete(self, document_id: int) -> None:
+        """Forget the state of a document (e.g. after deletion)."""
+        ...

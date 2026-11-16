@@ -82,3 +82,27 @@ class DocumentStatusResponse(BaseModel):
     id: int
     status: str
     error: str = ""
+
+
+class DocumentResponse(BaseModel):
+    """Metadata + pipeline state of a document (list, detail and rename)."""
+
+    id: int
+    name: str
+    size_bytes: int
+    status: str = "pending"
+    error: str = ""
+
+
+class RenameDocumentRequest(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def valid_name(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("El nombre no puede estar vacío.")
+        if len(stripped) > 255:
+            raise ValueError("El nombre no puede exceder 255 caracteres.")
+        return stripped

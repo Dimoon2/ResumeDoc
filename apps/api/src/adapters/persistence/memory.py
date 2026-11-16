@@ -47,6 +47,20 @@ class InMemoryDocumentRepository:
     def delete_document(self, document_id: int) -> None:
         self._documents_by_id.pop(document_id, None)
 
+    def list_documents(self, owner_id: int | None = None) -> list[Document]:
+        documents = self._documents_by_id.values()
+        if owner_id is None:
+            return list(documents)
+        return [doc for doc in documents if doc.owner_id == owner_id]
+
+    def rename_document(self, document_id: int, name: str) -> Document | None:
+        document = self._documents_by_id.get(document_id)
+        if document is None:
+            return None
+        renamed = replace(document, name=name)
+        self._documents_by_id[document_id] = renamed
+        return renamed
+
 
 class InMemoryDocumentStateStore:
     """Keeps pipeline states in a dictionary (double for tests)."""
@@ -67,3 +81,6 @@ class InMemoryDocumentStateStore:
                 self._states[document_id] = fail(state, message)
                 count += 1
         return count
+
+    def delete(self, document_id: int) -> None:
+        self._states.pop(document_id, None)

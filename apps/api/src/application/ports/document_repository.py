@@ -44,3 +44,11 @@ class DocumentRepository(Protocol):
     def delete_document(self, document_id: int) -> None:
         """Remove the record (compensation when enqueue fails, CA-8b)."""
         ...
+
+    def list_documents(self, owner_id: int | None = None) -> list[Document]:
+        """Return documents, filtered by owner; `None` = all (admin)."""
+        ...
+
+    def rename_document(self, document_id: int, name: str) -> Document | None:
+        """Change the display name of a document; None if it doesn't exist."""
+        ...

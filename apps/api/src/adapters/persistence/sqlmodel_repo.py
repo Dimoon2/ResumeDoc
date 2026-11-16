@@ -95,3 +95,21 @@ class SQLModelDocumentRepository:
             if orm_doc is not None:
                 session.delete(orm_doc)
                 session.commit()
+
+    def list_documents(self, owner_id: int | None = None) -> list[Document]:
+        with Session(self._engine) as session:
+            statement = select(Documento)
+            if owner_id is not None:
+                statement = statement.where(Documento.usuario_id == owner_id)
+            return [_to_domain_document(doc) for doc in session.exec(statement)]
+
+    def rename_document(self, document_id: int, name: str) -> Document | None:
+        with Session(self._engine) as session:
+            orm_doc = session.get(Documento, document_id)
+            if orm_doc is None:
+                return None
+            orm_doc.nombre = name
+            session.add(orm_doc)
+            session.commit()
+            session.refresh(orm_doc)
+            return _to_domain_document(orm_doc)

@@ -50,3 +50,6 @@ class RedisDocumentStateStore:
                 self._redis.hset(key, mapping={"status": "error", "error": message})
                 count += 1
         return count
+
+    def delete(self, document_id: int) -> None:
+        self._redis.delete(_KEY.format(document_id=document_id))
