@@ -7,3 +7,32 @@ __pycache__/
 .DS_Store
 docs/pgadmin-neon.md
 docs/pendientes.md
+# Virtual environments
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environment variables with secrets (e.g. JWT_SECRET, DATABASE_URL)
+.env
+.env.*
+!.env.example
+
+# User-uploaded binaries (STORAGE_DIR)
+apps/api/storage/*
+!apps/api/storage/.gitignore
+
+# Operating system / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+apps/api/docker-compose.yml
