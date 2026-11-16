@@ -1,8 +1,9 @@
 """Integration tests against the real PostgreSQL and Redis (T-18/T-19).
 
-Solo corren si se apunta la infraestructura con las variables de entorno:
+Por defecto usan la infraestructura del `.env` (DATABASE_URL/REDIS_URL).
+Para apuntar a otra (p. ej. una BD de pruebas), sobreescríbela:
 
-    INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc \
+    INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
     INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest tests/test_integration_db.py
 """
 
@@ -15,15 +16,25 @@ from sqlmodel import Session
 from db.models import User as OrmUser
 from src.adapters.persistence.redis_state import RedisDocumentStateStore
 from src.adapters.persistence.sqlmodel_repo import SQLModelDocumentRepository
+from src.core.config import get_settings
 from src.domain.document import Document, DocumentState
 from src.domain.user import new_user
 
-DB_URL = os.environ.get("INTEGRATION_DATABASE_URL", "")
-REDIS_URL = os.environ.get("INTEGRATION_REDIS_URL", "")
+try:
+    _settings = get_settings()
+except Exception:  # sin .env completo: queda en skip, como antes
+    _settings = None
+
+DB_URL = os.environ.get("INTEGRATION_DATABASE_URL", "") or (
+    _settings.database_url if _settings else ""
+)
+REDIS_URL = os.environ.get("INTEGRATION_REDIS_URL", "") or (
+    _settings.redis_url if _settings else ""
+)
 
 pytestmark = pytest.mark.skipif(
     not DB_URL or not REDIS_URL,
-    reason="infra de integración no disponible (define INTEGRATION_DATABASE_URL e INTEGRATION_REDIS_URL)",
+    reason="infra de integración no disponible (define DATABASE_URL/REDIS_URL en .env o INTEGRATION_*)",
 )
 
 _ORPHAN_MESSAGE = "Procesamiento interrumpido por un reinicio del worker."

@@ -91,12 +91,15 @@ ADMIN_EMAIL=root@correo.com ADMIN_PASSWORD=<una-clave-fuerte> \
 ### 7. Pruebas
 
 ```bash
-venv/bin/pytest          # suite completa (73 tests)
+venv/bin/pytest          # suite completa (76 tests, integración incluida)
 venv/bin/pyright         # tipos (0 errores esperados)
 ```
 
-Las de integración van contra una BD real; usa una BD de pruebas, no la
-compartida. Receta con una BD `resumedoc_test` en el contenedor local:
+Las 3 de integración usan por defecto la infra del `.env`
+(`DATABASE_URL`/`REDIS_URL`) y se limpian solas al terminar. Para apuntarlas
+a otra infraestructura (recomendado: una BD de pruebas, no la compartida),
+defíne `INTEGRATION_DATABASE_URL` e `INTEGRATION_REDIS_URL`. Receta con una
+BD `resumedoc_test` en el contenedor local:
 
 ```bash
 docker exec resumedoc_db psql -U resumedoc -d postgres -c "CREATE DATABASE resumedoc_test;"
