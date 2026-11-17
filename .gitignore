@@ -1,9 +1,51 @@
+# Dependencies
 node_modules/
+
+# Build output
 dist/
+coverage/
+.vite/
+
+# Logs
+*.log
+
+# Environment variables
 .env
 .env.*
 !.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+.venv/
+
+# Bases de datos locales (SQLite)
+*.sqlite
+*.sqlite3
+
+# Storage de binarios subidos por usuarios
+apps/api/storage/*
+!apps/api/storage/.gitignore
+
+# Docker
+apps/api/docker-compose.yml
+
+# Docs privados / internos
+docs/pgadmin-neon.md
+docs/pendientes.md
+
+# OS / editor
 .DS_Store
-*.log
-coverage/
-.vite/
+Thumbs.db
+.vscode/
+.idea/
