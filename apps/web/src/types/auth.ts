@@ -1,5 +1,5 @@
 export interface AuthUser {
-  id: string;
+  id: number | string;
   name: string;
   email: string;
 }

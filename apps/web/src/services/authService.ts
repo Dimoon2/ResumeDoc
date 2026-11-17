@@ -1,10 +1,10 @@
+import { apiRequest } from "./apiClient";
 import type {
   AuthResponse,
   LoginCredentials,
   RegisterData,
 } from "../types/auth";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const USE_MOCK_AUTH = import.meta.env.VITE_USE_MOCK_AUTH !== "false";
 const SESSION_KEY = "resumedoc.demo-session";
 
@@ -38,7 +38,7 @@ export const authService = {
       return response;
     }
 
-    return request<AuthResponse>("/auth/login", {
+    return apiRequest<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(credentials),
     });
@@ -59,7 +59,7 @@ export const authService = {
       return response;
     }
 
-    return request<AuthResponse>("/auth/register", {
+    return apiRequest<AuthResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -71,7 +71,7 @@ export const authService = {
       return;
     }
 
-    await request<void>("/auth/forgot-password", {
+    await apiRequest<void>("/auth/forgot-password", {
       method: "POST",
       body: JSON.stringify({ email }),
     });
@@ -80,12 +80,13 @@ export const authService = {
   async getSession(): Promise<AuthResponse | null> {
     if (!USE_MOCK_AUTH) {
       try {
-        // El backend puede validar la cookie HttpOnly y devolver el usuario actual.
-        return await request<AuthResponse>("/auth/me", { method: "GET" });
+        // El backend valida la cookie HttpOnly y devuelve el usuario actual.
+        return await apiRequest<AuthResponse>("/auth/me", { method: "GET" });
       } catch {
         return null;
       }
     }
+
     const saved = sessionStorage.getItem(SESSION_KEY);
     return saved ? (JSON.parse(saved) as AuthResponse) : null;
   },
@@ -95,25 +96,7 @@ export const authService = {
       sessionStorage.removeItem(SESSION_KEY);
       return;
     }
-    // Añadir aquí el endpoint de cierre de sesión si el backend lo requiere.
+
+    await apiRequest<void>("/auth/logout", { method: "POST" });
   },
 };
-
-async function request<T>(path: string, init: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init.headers,
-    },
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null);
-    throw new Error(payload?.detail ?? "No se pudo completar la solicitud.");
-  }
-
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
-}
