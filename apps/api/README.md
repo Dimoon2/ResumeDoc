@@ -151,6 +151,10 @@ ORM toca solo `adapters/persistence/`; cambiar de OCR, solo
 
 ## Pendientes conocidos
 
+- **Aplicar en Neon la migración `e3f9a7c1b204` (`token_refresco`)**: está
+  escrita y validada en modo offline, pero no se ha ejecutado contra la BD
+  compartida por falta de red. Hasta entonces no montar el repositorio
+  SQLModel de refresh tokens (usar `DATABASE_URL=memory://`).
 - Rate limiting en `/auth/login` y `/auth/register`.
 - Cookie `secure=True` para producción HTTPS (setting pendiente).
 - Purgar `requirements.txt` (solo se usan ~16 dependencias directas).
