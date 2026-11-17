@@ -1,18 +1,22 @@
-.venv/
-__pycache__/
-*.pyc
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+.vite/
+
+# Logs
+*.log
+
+# Environment variables
 .env
-*.sqlite
-*.sqlite3
-.DS_Store
-docs/pgadmin-neon.md
-docs/pendientes.md
-# Virtual environments
-venv/
-.venv/
+.env.*
+!.env.example
 
 # Python
 __pycache__/
+*.pyc
 *.py[cod]
 *.egg-info/
 .pytest_cache/
@@ -21,18 +25,27 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Environment variables with secrets (e.g. JWT_SECRET, DATABASE_URL)
-.env
-.env.*
-!.env.example
+# Virtual environments
+venv/
+.venv/
 
-# User-uploaded binaries (STORAGE_DIR)
+# Bases de datos locales (SQLite)
+*.sqlite
+*.sqlite3
+
+# Storage de binarios subidos por usuarios
 apps/api/storage/*
 !apps/api/storage/.gitignore
 
-# Operating system / editor
+# Docker
+apps/api/docker-compose.yml
+
+# Docs privados / internos
+docs/pgadmin-neon.md
+docs/pendientes.md
+
+# OS / editor
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-apps/api/docker-compose.yml

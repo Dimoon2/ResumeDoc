@@ -1,0 +1,16 @@
+{
+  "name": "resumedoc",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/web",
+    "packages/shared",
+    "packages/db"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @resumedoc/web",
+    "build": "npm run build --workspace @resumedoc/web",
+    "preview": "npm run preview --workspace @resumedoc/web",
+    "typecheck": "npm run typecheck --workspace @resumedoc/web"
+  }
+}

@@ -159,3 +159,4 @@ ORM toca solo `adapters/persistence/`; cambiar de OCR, solo
   `apps/api/` o se empaqueta (pip install -e) y quitar el parche.
 - `db/engine.py` tiene `echo=True`: loguea cada SQL (incluidos datos) —
   apagarlo para producción.
+
