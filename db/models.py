@@ -138,3 +138,25 @@ class User(SQLModel, table=True):
             "secondaryjoin": "User.id == UsuarioAccesoUsuario.propietario_id",
         },
     )
+
+
+class TokenRefresco(SQLModel, table=True):
+    """Registro de sesiones: permite revocar y detectar reuso (jti, no el JWT)."""
+
+    __tablename__ = "token_refresco"  # type: ignore
+
+    jti: str = Field(primary_key=True)
+    usuario_id: int = Field(
+        foreign_key="usuario.id", index=True, ondelete="CASCADE"
+    )
+    # un id por inicio de sesión; todos sus tokens comparten familia
+    familia: str = Field(index=True)
+    # tope absoluto: login + 7 días, nunca se extiende al rotar
+    fecha_expiracion: datetime = Field(index=True)
+    fecha_creacion: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc)
+    )
+    # rotado: si el mismo jti reaparece después, alguien copió el token
+    fecha_uso: datetime | None = Field(default=None)
+    # revocación lógica (igual que usuario_acceso_usuario.fecha_revocacion)
+    fecha_revocacion: datetime | None = Field(default=None)
