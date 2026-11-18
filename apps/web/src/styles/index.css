@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Manrope", "DM Sans", system-ui, sans-serif;
+
+  /* Paleta Oficial (RNF-02 / CA-05) */ 
+  --color-brand-light: #EAF6FF;
+  --color-brand-card: #BFE3FA;
+  --color-brand-accent: #7FC4F2;
+  --color-brand-primary: #3E8FD6;
+  --color-brand-dark: #1E5A9C;
+}
+
 :root {
   font-family: "DM Sans", sans-serif;
   color: #17324d;
@@ -262,4 +274,24 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.shadow-azure-floating {
+  box-shadow: 0 8px 24px -4px rgba(30, 90, 156, 0.08), 0 2px 6px -1px rgba(30, 90, 156, 0.04);
+}
+
+.shadow-azure-active {
+  box-shadow: 0 12px 32px -4px rgba(62, 143, 214, 0.20);
+}
+
+.shadow-azure-dropzone {
+  box-shadow: 0 0 0 4px rgba(127, 196, 242, 0.30);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
