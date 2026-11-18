@@ -1,0 +1,32 @@
+[
+  {
+    "email": "juan.carlos@resumedoc.com",
+    "name": "Juan Carlos",
+    "role": "user",
+    "password_env": "SEED_USER_PASSWORD"
+  },
+  {
+    "email": "diana@resumedoc.com",
+    "name": "Diana",
+    "role": "user",
+    "password_env": "SEED_USER_PASSWORD"
+  },
+  {
+    "email": "ana.laura@resumedoc.com",
+    "name": "Ana Laura",
+    "role": "user",
+    "password_env": "SEED_USER_PASSWORD"
+  },
+  {
+    "email": "andriu@resumedoc.com",
+    "name": "Andriu",
+    "role": "user",
+    "password_env": "SEED_USER_PASSWORD"
+  },
+  {
+    "email": "jose.bello@resumedoc.com",
+    "name": "Jose Bello",
+    "role": "user",
+    "password_env": "SEED_USER_PASSWORD"
+  }
+]
