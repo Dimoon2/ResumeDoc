@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { CheckCircle2, X } from "lucide-react";
 import type { ActiveNavSection, User } from "../../types/summary";
+import { ParticleNetwork } from "../ui/ParticleNetwork";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
 
@@ -57,7 +58,17 @@ export function DashboardLayout({
         onLogout={onLogout}
       />
 
-      <div className="flex-1 min-w-0 flex flex-col bg-[radial-gradient(circle_at_top_right,rgba(127,196,242,0.22),transparent_48%)] bg-brand-light text-brand-dark">
+      <div className="relative flex-1 min-w-0 flex flex-col bg-[radial-gradient(circle_at_top_right,rgba(127,196,242,0.22),transparent_48%)] bg-brand-light text-brand-dark">
+        {/* Fondo animado Constellation / Particle Network */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+        >
+          <div className="sticky top-0 h-screen w-full">
+            <ParticleNetwork />
+          </div>
+        </div>
+
         <TopBar
           breadcrumb={breadcrumb}
           searchQuery={searchQuery}
@@ -66,7 +77,7 @@ export function DashboardLayout({
           onOpenMobileMenu={onOpenMobile}
         />
 
-        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
+        <main className="relative z-10 flex-1 px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
           <div className="max-w-[1200px] mx-auto space-y-6">
             {toastMessage && (
               <div
