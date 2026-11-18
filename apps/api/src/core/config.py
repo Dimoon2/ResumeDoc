@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     # Orígenes permitidos para cookies con credenciales (frontend Vite, 5173).
     cors_origins: str = "http://localhost:5173"
 
+    # Cookies de sesión: `secure` solo puede ser `false` en desarrollo HTTP.
+    # En producción (HTTPS) debe configurarse COOKIE_SECURE=true.
+    cookie_secure: bool = False
+
     @field_validator(
         "database_url", "redis_url", "storage_dir", "jwt_secret", "ocr_lang"
     )

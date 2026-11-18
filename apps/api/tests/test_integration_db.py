@@ -33,7 +33,7 @@ REDIS_URL = os.environ.get("INTEGRATION_REDIS_URL", "") or (
 )
 
 pytestmark = pytest.mark.skipif(
-    not DB_URL or not REDIS_URL,
+    not DB_URL or not REDIS_URL or DB_URL.startswith("memory://"),
     reason="infra de integración no disponible (define DATABASE_URL/REDIS_URL en .env o INTEGRATION_*)",
 )
 
