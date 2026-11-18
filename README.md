@@ -1,8 +1,26 @@
-# ResumeDoc — Capa de datos
+# ResumeDoc
 
-Solo la capa de base de datos (SQLModel + PostgreSQL en Neon). No incluye backend ni frontend.
+Plataforma para convertir PDFs e imágenes en texto consultable (OCR) y
+resúmenes. Este repositorio contiene la base de datos (SQLModel + PostgreSQL en
+Neon), el backend en `apps/api/` y el frontend React en `apps/web/` (este
+último vive en las ramas `develop` y `feat/user-dashboard`).
 
-## Requisitos
+## Dónde está cada cosa
+
+| Parte | Ubicación | Documentación |
+|---|---|---|
+| Base de datos | `db/`, `alembic/`, `scripts/` | este README |
+| Backend (FastAPI + Celery) | `apps/api/` | [`apps/api/README.md`](apps/api/README.md) |
+| Frontend (React + Vite) | `apps/web/` (ramas de front) | `apps/web/README.md` |
+| Contrato de auth para el front | — | [`docs/api-auth-frontend.md`](docs/api-auth-frontend.md) |
+
+Para levantar el backend: [`apps/api/README.md`](apps/api/README.md). Para
+consumir login/refresh desde el front:
+[`docs/api-auth-frontend.md`](docs/api-auth-frontend.md).
+
+## Capa de datos
+
+### Requisitos
 
 - Python 3.13
 - Cuenta en [Neon](https://neon.tech)
@@ -19,13 +37,15 @@ pip install -r requirements.txt
 
 1. En Neon: **Connection Details → Direct connection** (no la *pooled*).
 2. Copia `.env.example` a `.env` y reemplaza la URL. Cambia el esquema
-   `postgresql://` por `postgresql+psycopg://`:
+   `postgresql://` por `postgresql+psycopg://`.
+3. La API y el worker leen `apps/api/.env` (misma plantilla); el resto de
+   variables obligatorias están en `.env.example`.
 
 ```env
 DATABASE_URL=postgresql+psycopg://usuario:password@host/dbname?sslmode=require
 ```
 
-> El archivo `.env` no se sube al repositorio.
+> Los archivos `.env` no se suben al repositorio.
 
 ## Modelo de datos
 
@@ -37,6 +57,7 @@ DATABASE_URL=postgresql+psycopg://usuario:password@host/dbname?sslmode=require
 | `documento` | `id` PK, `nombre`, `ubicacion`, `peso`, `es_resumen`, `fecha_creacion`, `usuario_id` FK | Documentos. `usuario_id` es el dueño que lo subió; `es_resumen` indica si es un resumen. |
 | `documento_contenido_documento` | `contenedor_id` FK, `contenido_id` FK, PK compuesta | Composición documento ↔ documento. |
 | `usuario_acceso_usuario` | `propietario_id` FK, `autorizado_id` FK, `puede_editar`, `fecha_otorgamiento`, `fecha_revocacion`, PK compuesta | Permisos de acceso a todos los documentos de un propietario. |
+| `token_refresco` | `jti` PK, `usuario_id` FK, `familia`, `fecha_expiracion`, `fecha_creacion`, `fecha_uso`, `fecha_revocacion` | Sesiones de refresh: rotación atómica y detección de reuso (familia se revoca). |
 
 ### Relaciones
 

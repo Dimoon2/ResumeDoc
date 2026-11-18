@@ -9,13 +9,14 @@ arquitectura hexagonal, cola Celery/Redis y PostgreSQL (rama `data-base`).
 | Fase | Tareas | Qué entrega |
 |---|---|---|
 | 0 — Fundamentos | T-01, T-02 | Esqueleto hexagonal (`domain/`, `application/`, `adapters/`, composición en `main.py`), config 100% por env vars con fail-fast, `/health` |
-| 1 — Autenticación | T-03…T-05 | JWT (access 30 min / refresh 7 días) + bcrypt, login/registro/me/logout, cookie HttpOnly, bootstrap del primer admin por env, tests |
+| 1 — Autenticación | T-03…T-05 | JWT (access 30 min / refresh 7 días) + bcrypt, login/registro/me/logout, cookies HttpOnly, **refresh rotativo por familia** (reuso ⇒ revoca la familia) y `token_refresco` persistido en BD, bootstrap del primer admin por env, tests |
 | 2 — Subida | T-06…T-10 | `POST /documents` (validación extensión/vacío/20 MB → 201 `{id, status:"pending"}`), guardado `{uuid}.{ext}`, puerto `DocumentRepository` + doble en memoria, encolado por Celery con **compensación si el broker falla** (sin huérfanos en BD ni disco) |
 | 3 — Pipeline | T-11…T-17 | Máquina de estados en Redis (`pending → processing → completed/error`), worker Celery con `soft_time_limit` (5 min) y hook de huérfanos al arrancar, PDF: capa textual pypdf + OCR por página sin texto, PDF cifrado → error, > 100 páginas → error, `GET /documents/{id}/status` (polling, 404 uniforme) |
-| 4 — Integración | T-18, T-19 | Adaptador SQLModel real sobre el paquete `db/` del equipo de datos (fusionado de `data-base`, migraciones Alembic activas), pruebas de integración auto-skipped sin infra |
+| 4 — Integración | T-18, T-19 | Adaptadores SQLModel reales sobre el paquete `db/` (documentos y `token_refresco`, con `claim` atómico y revocación por familia), migraciones Alembic aplicadas en Neon, pruebas de integración auto-skipped sin infra |
 
-Suite: **73 passed, 3 skipped · pyright 0 errores** (los 3 skips son las
-pruebas de integración, que solo corren con infra real).
+Suite: **118 passed · pyright 0 errores**. Quedan 3 fallos de entorno si no
+está instalado el binario `tesseract` (pruebas de OCR real) y 10 skips: las
+pruebas de integración solo corren con infra real (no `memory://`).
 
 ## Cómo levantar el backend
 
@@ -25,16 +26,25 @@ los tests unitarios).
 
 ### 1. Entorno virtual
 
+Desde la **raíz del repo** (el `.venv` vive ahí y lo comparten API y Alembic):
+
 ```bash
-cd apps/api
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r apps/api/requirements.txt
 ```
+
+`pyright` no viene en `requirements.txt`: se ejecuta con `npx pyright`
+desde `apps/api` (lee `pyrightconfig.json`, que apunta al `.venv` de la raíz).
 
 ### 2. Variables de entorno
 
+El repo usa **dos** `.env` (los dos a partir de la misma plantilla):
+`./.env` en la raíz para Alembic y `scripts/check_db`, y `apps/api/.env`
+porque la API y el worker leen `.env` desde su directorio de trabajo.
+
 ```bash
 cp .env.example .env
+cp .env.example apps/api/.env
 ```
 
 Rellena **TODAS** las variables: sin `.env` completo no arranca (fail-fast
@@ -43,6 +53,9 @@ con mensaje en español). Las dos que dependen del equipo:
 - `DATABASE_URL` — la BD compartida es **Neon** (pedir la URL al
   responsable de datos) o un Postgres local (paso 3).
 - `REDIS_URL` — `redis://localhost:6379/0` con el contenedor de abajo.
+
+Para el front: `CORS_ORIGINS` (default `http://localhost:5173`) y
+`COOKIE_SECURE` (default `false`, solo desarrollo HTTP).
 
 ### 3. Infraestructura local (solo si no usas la BD del equipo)
 
@@ -74,8 +87,8 @@ raíz del repo, **dos niveles** arriba de `apps/api`:
 
 ```bash
 cd apps/api
-PYTHONPATH=../.. venv/bin/python -m uvicorn src.main:app --reload   # API en :8000
-PYTHONPATH=../.. venv/bin/celery -A src.worker:celery_app worker --loglevel=info
+PYTHONPATH=../.. ../../.venv/bin/python -m uvicorn src.main:app --reload  # API en :8000
+PYTHONPATH=../.. ../../.venv/bin/celery -A src.worker:celery_app worker --loglevel=info
 ```
 
 Verificación rápida: `curl http://localhost:8000/health` →
@@ -85,17 +98,18 @@ Verificación rápida: `curl http://localhost:8000/health` →
 
 ```bash
 ADMIN_EMAIL=root@correo.com ADMIN_PASSWORD=<una-clave-fuerte> \
-  PYTHONPATH=../.. venv/bin/python -m uvicorn src.main:app
+  PYTHONPATH=../.. ../../.venv/bin/python -m uvicorn src.main:app
 ```
 
 ### 7. Pruebas
 
 ```bash
-venv/bin/pytest          # suite completa (76 tests, integración incluida)
-venv/bin/pyright         # tipos (0 errores esperados)
+cd apps/api
+../../.venv/bin/python -m pytest            # suite completa
+npx pyright                                 # tipos: 0 errores (usa ../../.venv)
 ```
 
-Las 3 de integración usan por defecto la infra del `.env`
+Las pruebas de integración (worker y repo de refresh) usan por defecto la infra del `.env`
 (`DATABASE_URL`/`REDIS_URL`) y se limpian solas al terminar. Para apuntarlas
 a otra infraestructura (recomendado: una BD de pruebas, no la compartida),
 defíne `INTEGRATION_DATABASE_URL` e `INTEGRATION_REDIS_URL`. Receta con una
@@ -105,10 +119,10 @@ BD `resumedoc_test` en el contenedor local:
 docker exec resumedoc_db psql -U resumedoc -d postgres -c "CREATE DATABASE resumedoc_test;"
 cd ../..
 DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
-  apps/api/venv/bin/python -m alembic upgrade head
+  .venv/bin/python -m alembic upgrade head
 cd apps/api
 INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
-INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest tests/test_integration_db.py
+INTEGRATION_REDIS_URL=redis://localhost:6379/0 ../../.venv/bin/pytest tests/test_integration_db.py
 ```
 
 ## Variables de entorno
@@ -120,17 +134,42 @@ plantilla completa (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`,
 
 ## Contrato de autenticación (con el frontend)
 
-- `POST /auth/register` → 201 `{user: {id, name, email}}` + cookie `access_token`
-  (HttpOnly). Registro abierto, rol `user`; duplicado → 409. Sin permisos
-  del admin, el usuario solo ve sus documentos (D-28).
-- `POST /auth/login` → 200 `{user}` + cookie; credenciales mal → 401.
-- `GET /auth/me` → 200 `{user}` desde la cookie; 401 si no hay sesión
-  (el front lo trata como logged-out).
-- `POST /auth/logout` → 204, borra la cookie.
-- `POST /auth/refresh` → bearer, para clientes sin cookies (el front no lo usa).
+- `POST /auth/register` → 201 `{user: {id, name, email}}` + cookies
+  `access_token` y `refresh_token` (HttpOnly). Registro abierto, rol `user`;
+  duplicado → 409. Sin permisos del admin, el usuario solo ve sus documentos
+  (D-28).
+- `POST /auth/login` → 200 `{user}` + ambas cookies; credenciales mal → 401.
+- `GET /auth/me` → 200 `{user}` desde la cookie de access; 401 si no hay
+  sesión (el front lo trata como logged-out).
+- `POST /auth/refresh` → rota el refresh (cookie o body) y renueva ambas
+  cookies; responde `{access_token}`. Token inválido, expirado, revocado o
+  reusado → 401 genérico.
+- `POST /auth/logout` → 204, revoca la familia de sesión y borra ambas cookies.
 - `POST /auth/forgot-password` → 202 genérico (anti-enumeración); el reset
   real llega con el flujo de correo.
 - CORS con credenciales para `CORS_ORIGINS` (default `http://localhost:5173`).
+
+### Cookies de sesión
+
+| Cookie | Path | Max-Age | HttpOnly | SameSite | Secure |
+|---|---|---|---|---|---|
+| `access_token` | `/` | `JWT_ACCESS_TTL` | Sí | `lax` | `COOKIE_SECURE` |
+| `refresh_token` | `/auth` | restante hasta `expires_at` | Sí | `lax` | `COOKIE_SECURE` |
+
+`COOKIE_SECURE` es opcional (default `false`, solo válido en HTTP local); en
+producción HTTPS debe ser `true`. El refresh usa `Path=/auth`, así que no se
+envía a `/documents/*`; `SameSite=Lax` cubre el CSRF básico (sin token CSRF
+explícito en el MVP).
+
+### Integración con el frontend
+
+Guía completa para el equipo de front (payloads, cookies, interceptor con
+`401 → refresh → reintento` y advertencia de refresh concurrente):
+**[`docs/api-auth-frontend.md`](../../docs/api-auth-frontend.md)**.
+
+Resumen: cada refresh invalida el token anterior y emite uno nuevo de la misma
+familia; reusar un token ya rotado revoca toda la sesión, así que el front debe
+compartir una única promesa de refresh (single-flight).
 
 ## Flujo de documentos
 
@@ -151,12 +190,15 @@ ORM toca solo `adapters/persistence/`; cambiar de OCR, solo
 
 ## Pendientes conocidos
 
-- **Aplicar en Neon la migración `e3f9a7c1b204` (`token_refresco`)**: está
-  escrita y validada en modo offline, pero no se ha ejecutado contra la BD
-  compartida por falta de red. Hasta entonces no montar el repositorio
-  SQLModel de refresh tokens (usar `DATABASE_URL=memory://`).
-- Rate limiting en `/auth/login` y `/auth/register`.
-- Cookie `secure=True` para producción HTTPS (setting pendiente).
+- ~~Aplicar en Neon la migración `e3f9a7c1b204` (`token_refresco`)~~: hecha
+  (recreada con `downgrade d9b1c3e5f702` + `upgrade head`; `alembic check`
+  limpio). El repositorio SQLModel de refresh tokens ya persiste en
+  `token_refresco` (`claim` atómico y revocación por familia).
+- Rate limiting en `/auth/login`, `/auth/register` y `/auth/refresh`.
+- Activar `COOKIE_SECURE=true` en producción HTTPS (default `false`).
+- Purga periódica de `token_refresco` expirados (`delete_expired` ya existe).
+- Si el front vivirá en otro dominio: `SameSite=None` configurable + CSRF
+  (hoy `SameSite=Lax`; véase `docs/api-auth-frontend.md` §7).
 - Purgar `requirements.txt` (solo se usan ~16 dependencias directas).
 - Zona admin (T-A4) y concesiones: sin implementar.
 - El `PYTHONPATH=../..` es un parche: decidir en equipo si `db/` se mueve a
