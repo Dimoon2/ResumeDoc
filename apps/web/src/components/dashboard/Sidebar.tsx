@@ -37,8 +37,8 @@ export function Sidebar({
   ];
 
   const sidebarContent = (
-    <div className="flex h-full flex-col justify-between bg-white border-r border-brand-card">
-      <div className="p-6 space-y-8 overflow-y-auto">
+    <div className="flex  h-full flex-col justify-between fixed bg-white border-r border-brand-card">
+      <div className="p-6 space-y-8 overflow-y-auto ">
         <div className="flex items-center justify-between">
           <button
             type="button"
