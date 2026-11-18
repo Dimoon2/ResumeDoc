@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { summaryService } from "../../services/summaryService";
 import type { ChatMessage, SummaryDocument, User } from "../../types/summary";
+import { OctyMascot } from "../ui/OctyMascot";
 
 interface SynthesisReaderViewProps {
   doc: SummaryDocument;
@@ -377,13 +378,21 @@ ${doc.sourceExcerpt}`;
           </div>
 
           <div className="rounded-2xl bg-white border border-brand-card p-5 space-y-4 shadow-sm">
-            <div>
-              <h2 className="font-display text-[14px] font-semibold text-brand-dark">
-                Consultar el documento
-              </h2>
-              <p className="text-[12px] text-brand-dark/70">
-                Haz preguntas específicas sobre cifras, cláusulas o responsabilidades.
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-light border border-brand-card">
+                <OctyMascot
+                  pose={isAsking ? "thinking" : askError ? "error" : "waving"}
+                  size={38}
+                />
+              </div>
+              <div>
+                <h2 className="font-display text-[14px] font-semibold text-brand-dark">
+                  Consultar con Octy
+                </h2>
+                <p className="text-[12px] text-brand-dark/70">
+                  Haz preguntas sobre cifras, cláusulas o responsabilidades.
+                </p>
+              </div>
             </div>
 
             {messages.length > 0 && (

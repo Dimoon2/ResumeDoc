@@ -1,6 +1,7 @@
 import { ArrowRight, BarChart3, FileSearch, FileText, FolderOpen, ScanText, Sparkles, UploadCloud } from "lucide-react";
 import { Link } from "react-router-dom";
 import SiteHeader from "../components/layout/SiteHeader";
+import { OctyMascot } from "../components/ui/OctyMascot";
 
 const features = [
   {
@@ -70,7 +71,8 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="floating-chip"><UploadCloud size={16} /> PDF e imágenes</div>
-              <div className="floating-spark"><Sparkles size={17} /></div>
+              <div className="floating-octy" title="Octy, tu asistente de ResumeDoc">
+              <OctyMascot pose="waving" size={50} /></div>
             </div>
           </div>
           <div className="hero-wave" />

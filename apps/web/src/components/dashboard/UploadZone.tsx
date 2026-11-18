@@ -5,7 +5,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from "react";
-import { AlertCircle, FileUp, FolderInput, Loader2 } from "lucide-react";
+import { FileUp, FolderInput, Loader2 } from "lucide-react";
 import { summaryService } from "../../services/summaryService";
 import type { SummaryDocument, User } from "../../types/summary";
 import {
@@ -13,6 +13,7 @@ import {
   inferFileFormat,
   validateSourceFile,
 } from "../../utils/summaryFiles";
+import { OctyMascot } from "../ui/OctyMascot";
 
 interface UploadZoneProps {
   currentUser: User;
@@ -158,14 +159,16 @@ export function UploadZone({
 
         <div className="mx-auto flex max-w-2xl flex-col items-center">
           <div
-            className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-200 ${
-              isDragOver || isProcessing
-                ? "bg-brand-primary text-white scale-110 shadow-md shadow-brand-primary/30"
-                : "bg-white border border-brand-accent text-brand-primary shadow-sm group-hover:-translate-y-1 group-hover:shadow-azure-floating"
+            className={`mb-4 flex items-center justify-center rounded-2xl transition-all duration-200 ${
+              isProcessing
+                ? "h-16 w-16 bg-white border border-brand-accent shadow-azure-floating scale-105"
+                : isDragOver
+                  ? "h-14 w-14 bg-brand-primary text-white scale-110 shadow-md shadow-brand-primary/30"
+                  : "h-14 w-14 bg-white border border-brand-accent text-brand-primary shadow-sm group-hover:-translate-y-1 group-hover:shadow-azure-floating"
             }`}
           >
             {isProcessing ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <OctyMascot pose="thinking" size={54} />
             ) : (
               <FileUp className="h-6 w-6" />
             )}
@@ -203,8 +206,9 @@ export function UploadZone({
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="text-[12px] font-semibold text-brand-dark tabular-nums">
-                Generando resumen · {progress}%
+              <p className="inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold text-brand-dark tabular-nums">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-primary" />
+                <span>Octy está generando el resumen · {progress}%</span>
               </p>
             </div>
           )}
@@ -234,9 +238,9 @@ export function UploadZone({
           {errorMsg && (
             <div
               role="alert"
-              className="animate-fade-up mt-4 w-full max-w-lg rounded-xl bg-white border border-brand-dark px-4 py-3 flex items-start gap-2.5 text-left text-[13px] font-medium text-brand-dark shadow-sm"
+              className="animate-fade-up mt-4 w-full max-w-lg rounded-xl bg-white border border-brand-dark px-4 py-3 flex items-center gap-3 text-left text-[13px] font-medium text-brand-dark shadow-sm"
             >
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-brand-primary" />
+              <OctyMascot pose="error" size={34} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}

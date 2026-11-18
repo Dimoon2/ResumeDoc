@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, FileText, FileUp, Loader2, X } from "lucide-react";
+import { FileUp, Loader2, X } from "lucide-react";
 import { summaryService } from "../../../services/summaryService";
 import type {
   SummaryDocument,
@@ -11,6 +11,7 @@ import {
   inferFileFormat,
   validateSourceFile,
 } from "../../../utils/summaryFiles";
+import { OctyMascot } from "../../ui/OctyMascot";
 
 const SAMPLE_PASTE_TEXT = `INFORME EJECUTIVO DE EXPANSIÓN LOGÍSTICA — CORREDOR ATLÁNTICO 2027
 
@@ -139,8 +140,11 @@ export function ImportPreviewModal({
       <div className="animate-modal-in w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white border border-brand-card shadow-azure-active overflow-hidden">
         <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-brand-card bg-gradient-to-r from-brand-light to-white flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card text-brand-primary shadow-sm">
-              <FileText className="h-5 w-5" />
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card shadow-sm">
+              <OctyMascot
+                pose={isGenerating ? "thinking" : errorMsg ? "error" : "neutral"}
+                size={36}
+              />
             </div>
             <div className="min-w-0">
               <h2
@@ -296,19 +300,26 @@ export function ImportPreviewModal({
           )}
 
           {isGenerating && (
-            <div className="animate-fade-up space-y-2 rounded-xl bg-brand-light border border-brand-card p-4">
-              <div className="flex items-center justify-between text-[13px] font-semibold text-brand-dark">
-                <span className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-brand-primary" />
-                  <span>Generando resumen...</span>
-                </span>
-                <span className="tabular-nums">{progress}%</span>
+            <div className="animate-fade-up rounded-2xl bg-brand-light border border-brand-card p-4 flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card shadow-sm">
+                <OctyMascot pose="thinking" size={48} />
               </div>
-              <div className="h-2.5 w-full rounded-full bg-brand-card overflow-hidden p-0.5">
-                <div
-                  className="h-full rounded-full bg-brand-primary transition-all duration-300 ease-out"
-                  style={{ width: `${progress}%` }}
-                />
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center justify-between text-[13px] font-semibold text-brand-dark">
+                  <span className="flex items-center gap-2 truncate">
+                    <Loader2 className="h-4 w-4 animate-spin text-brand-primary shrink-0" />
+                    <span className="truncate">
+                      Octy está resumiendo tu documento...
+                    </span>
+                  </span>
+                  <span className="tabular-nums shrink-0 ml-2">{progress}%</span>
+                </div>
+                <div className="h-2.5 w-full rounded-full bg-brand-card overflow-hidden p-0.5">
+                  <div
+                    className="h-full rounded-full bg-brand-primary transition-all duration-300 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -316,9 +327,9 @@ export function ImportPreviewModal({
           {errorMsg && (
             <div
               role="alert"
-              className="animate-fade-up rounded-xl bg-brand-light border border-brand-dark p-3.5 flex items-start gap-2.5 text-[13px] font-medium text-brand-dark"
+              className="animate-fade-up rounded-xl bg-brand-light border border-brand-dark p-3.5 flex items-center gap-3 text-[13px] font-medium text-brand-dark"
             >
-              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-brand-primary" />
+              <OctyMascot pose="error" size={34} className="shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}

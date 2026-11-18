@@ -108,6 +108,21 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .floating-chip { position: absolute; z-index: 2; right: -1px; bottom: 42px; display: flex; align-items: center; gap: 8px; padding: 12px 15px; color: #426782; background: white; border: 1px solid #e6f0f7; border-radius: 12px; box-shadow: 0 9px 25px #2e6a941c; font-size: 11px; font-weight: 700; }
 .floating-chip svg, .floating-spark { color: var(--blue-500); }
 .floating-spark { position: absolute; top: 38px; right: 37px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: white; box-shadow: 0 8px 20px #2e6a941b; }
+.floating-octy {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid #e6f0f7;
+  box-shadow: 0 10px 26px #2e6a941f;
+  animation: gentleFloat 4.2s ease-in-out infinite;
+}
 .hero-wave { position: absolute; bottom: -1px; left: -2%; width: 104%; height: 34px; border-radius: 50% 50% 0 0 / 100% 100% 0 0; background: white; }
 .section-pad { padding: 91px 0; }
 .section-heading { max-width: 610px; margin: 0 auto 45px; text-align: center; }
@@ -275,7 +290,15 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
-
+@media (max-width: 680px) {
+  .floating-octy {
+    top: 4px;
+    right: 6px;
+    width: 56px;
+    height: 56px;
+    border-radius: 15px;
+  }
+}
 .font-display {
   font-family: var(--font-display);
 }
