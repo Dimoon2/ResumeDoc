@@ -160,7 +160,9 @@ def delete_document(
     states: DocumentStateStore = Depends(get_state_store),
     storage: FileStorage = Depends(get_storage),
 ) -> None:
-    """Delete the record, the stored binary and the pipeline state (D-24);
+    """Delete the record, the file referenced by `ubicacion` (the processed
+    text for completed documents, the original binary otherwise — the
+    binary is purged at processing time) and the pipeline state (D-24);
     409 while the worker is processing it (D-15)."""
     document = _accessible_document(repository.get_document(document_id), user)
     state = states.get(document_id)

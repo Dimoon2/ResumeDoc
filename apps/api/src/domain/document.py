@@ -20,8 +20,8 @@ Status = Literal["pending", "processing", "completed", "error"]
 
 @dataclass(frozen=True)
 class DocumentState:
-    """Pipeline state of a document: lives in Redis, text lives in a temp
-    folder referenced by `text_path` (P-13)."""
+    """Pipeline state of a document: lives in Redis, text lives on disk
+    referenced by `text_path`."""
 
     status: Status
     text_path: str = ""

@@ -61,6 +61,13 @@ class InMemoryDocumentRepository:
         self._documents_by_id[document_id] = renamed
         return renamed
 
+    def update_location(self, document_id: int, location: str) -> None:
+        document = self._documents_by_id.get(document_id)
+        if document is not None:
+            self._documents_by_id[document_id] = replace(
+                document, location=location
+            )
+
 
 class InMemoryDocumentStateStore:
     """Keeps pipeline states in a dictionary (double for tests)."""

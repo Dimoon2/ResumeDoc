@@ -70,11 +70,12 @@ def process_document(
     ocr: OcrEngine,
     document_id: int,
 ) -> None:
-    """Extract the text of a document and store it in the temp folder (T-14).
-
-    Status transitions live in the state store (D-24); the text is NOT
-    persisted to the DB — saving is an explicit user action (D-25). Empty
-    text completes normally (D-09).
+    """Extract the text of a document and store it in the storage folder
+    (T-14) — automatically, no user action needed: the flow is upload →
+    OCR → save → view. On completion the DB reference `ubicacion` is
+    repointed at the processed text and the original binary is deleted
+    (team decision: the text is the only content kept). State transitions
+    live in the state store (D-24). Empty text completes normally (D-09).
     """
     document = repository.get_document(document_id)
     if document is None:
@@ -91,6 +92,8 @@ def process_document(
         else:
             text = ocr.recognize(data)
         text_path = storage.save_text(text)
+        repository.update_location(document_id, text_path)
+        storage.delete(document.location)  # el binario ya no se necesita
     except DocumentProcessingError as exc:
         states.set(document_id, fail(processing, str(exc)))
         return
