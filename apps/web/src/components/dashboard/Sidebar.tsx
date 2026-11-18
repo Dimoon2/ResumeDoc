@@ -1,5 +1,6 @@
 import { FileText, FolderOpen, LogOut, Users, X } from "lucide-react";
 import type { ActiveNavSection, User } from "../../types/summary";
+import { OctyMascot } from "../ui/OctyMascot";
 
 interface SidebarProps {
   activeNav: ActiveNavSection;
@@ -109,31 +110,49 @@ export function Sidebar({
         </nav>
       </div>
 
-      <div className="p-4 border-t border-brand-card bg-brand-light/70">
-        <div className="rounded-xl bg-white border border-brand-card/80 p-2.5 flex items-center justify-between gap-2 shadow-sm">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-card text-[12px] font-bold text-brand-dark">
-              {currentUser.initials}
+      <div className="shrink-0">
+        <div className="px-4 pb-3">
+          <div className="rounded-2xl bg-brand-light border border-brand-card p-3 flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card shadow-sm">
+              <OctyMascot pose="neutral" size={38} />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-brand-dark">
-                {currentUser.name}
+              <p className="font-display text-[13px] font-bold text-brand-dark leading-tight">
+                Octy
               </p>
-              <p className="truncate text-[11px] text-brand-dark/65">
-                {currentUser.email || currentUser.role}
+              <p className="text-[11px] leading-[15px] text-brand-dark/70 mt-0.5">
+                Asistente de resúmenes
               </p>
             </div>
           </div>
+        </div>
 
-          <button
-            type="button"
-            onClick={onLogout}
-            aria-label="Cerrar sesión"
-            title="Cerrar sesión"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 hover:bg-brand-light hover:text-brand-primary transition-all duration-150 active:scale-95"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+        <div className="p-4 border-t border-brand-card bg-brand-light/70">
+          <div className="rounded-xl bg-white border border-brand-card/80 p-2.5 flex items-center justify-between gap-2 shadow-sm">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-card text-[12px] font-bold text-brand-dark">
+                {currentUser.initials}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-semibold text-brand-dark">
+                  {currentUser.name}
+                </p>
+                <p className="truncate text-[11px] text-brand-dark/65">
+                  {currentUser.email || currentUser.role}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={onLogout}
+              aria-label="Cerrar sesión"
+              title="Cerrar sesión"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 hover:bg-brand-light hover:text-brand-primary transition-all duration-150 active:scale-95"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { ActiveNavSection, User } from "../../types/summary";
+import { OctyMascot } from "../ui/OctyMascot";
 import { ParticleNetwork } from "../ui/ParticleNetwork";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
@@ -84,10 +85,16 @@ export function DashboardLayout({
                 role="status"
                 className="animate-toast-in rounded-xl bg-white/95 backdrop-blur-sm border border-brand-primary px-4 py-3 flex items-center justify-between gap-3 shadow-azure-floating"
               >
-                <div className="flex items-center gap-2.5 text-[13px] sm:text-[14px] font-semibold text-brand-dark min-w-0">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-light text-brand-primary">
-                    <CheckCircle2 className="h-4 w-4" />
-                  </span>
+                <div className="flex items-center gap-3 text-[13px] sm:text-[14px] font-semibold text-brand-dark min-w-0">
+                  <OctyMascot
+                    pose={
+                      toastMessage.includes("eliminado")
+                        ? "neutral"
+                        : "celebrating"
+                    }
+                    size={34}
+                    className="shrink-0"
+                  />
                   <span className="break-words">{toastMessage}</span>
                 </div>
                 <button
