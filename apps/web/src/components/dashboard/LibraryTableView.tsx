@@ -30,7 +30,7 @@ export function LibraryTableView({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="animate-fade-up space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-[22px] sm:text-[28px] font-semibold leading-[30px] sm:leading-[36px] tracking-[-0.015em] text-brand-dark">
@@ -42,7 +42,7 @@ export function LibraryTableView({
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card overflow-x-auto max-w-full">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card overflow-x-auto max-w-full shadow-sm">
             {[
               { id: "all", label: "Todos" },
               { id: "mine", label: "Propios" },
@@ -56,9 +56,9 @@ export function LibraryTableView({
                   onClick={() =>
                     setOwnershipFilter(item.id as "all" | "mine" | "shared")
                   }
-                  className={`h-8 px-3 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                  className={`h-8 px-3 rounded-lg text-[12px] font-semibold transition-all duration-150 active:scale-[0.97] whitespace-nowrap shrink-0 ${
                     active
-                      ? "bg-brand-primary text-white"
+                      ? "bg-brand-primary text-white shadow-sm"
                       : "text-brand-dark hover:bg-brand-light"
                   }`}
                 >
@@ -68,7 +68,7 @@ export function LibraryTableView({
             })}
           </div>
 
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card overflow-x-auto max-w-full">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card overflow-x-auto max-w-full shadow-sm">
             {(["ALL", "PDF", "PNG", "JPG"] as const).map((fmt) => {
               const active = formatFilter === fmt;
               return (
@@ -76,9 +76,9 @@ export function LibraryTableView({
                   key={fmt}
                   type="button"
                   onClick={() => setFormatFilter(fmt)}
-                  className={`h-8 px-2.5 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap shrink-0 ${
+                  className={`h-8 px-2.5 rounded-lg text-[12px] font-semibold transition-all duration-150 active:scale-[0.97] whitespace-nowrap shrink-0 ${
                     active
-                      ? "bg-brand-primary text-white"
+                      ? "bg-brand-primary text-white shadow-sm"
                       : "text-brand-dark hover:bg-brand-light"
                   }`}
                 >
@@ -93,17 +93,18 @@ export function LibraryTableView({
       {/* Vista móvil (< md) */}
       <div className="md:hidden space-y-3">
         {filtered.length === 0 ? (
-          <div className="rounded-2xl bg-white border border-brand-card p-8 text-center text-[14px] text-brand-dark/70">
+          <div className="rounded-2xl bg-white border border-brand-card p-8 text-center text-[14px] text-brand-dark/70 shadow-sm">
             No hay documentos que coincidan con los filtros seleccionados.
           </div>
         ) : (
-          filtered.map((doc) => (
+          filtered.map((doc, idx) => (
             <article
               key={doc.id}
-              className="rounded-2xl bg-white border border-brand-card p-4 space-y-3"
+              style={{ animationDelay: `${Math.min(idx, 6) * 40}ms` }}
+              className="animate-fade-up rounded-2xl bg-white border border-brand-card p-4 space-y-3 transition-all duration-150 hover:border-brand-accent hover:shadow-azure-floating"
             >
               <div className="flex flex-wrap items-center gap-2 text-[12px] font-semibold text-brand-dark/70 tabular-nums">
-                <span className="rounded-full bg-brand-card px-2.5 py-0.5 text-[10px] font-bold tracking-[0.05em] text-brand-dark">
+                <span className="rounded-full bg-brand-light border border-brand-card px-2.5 py-0.5 text-[10px] font-bold tracking-[0.05em] text-brand-dark">
                   {doc.fileType}
                 </span>
                 <span>{doc.isOwnedByMe ? "Propio" : doc.ownerName}</span>
@@ -134,7 +135,7 @@ export function LibraryTableView({
                   <button
                     type="button"
                     onClick={() => onOpenDocument(doc)}
-                    className="inline-flex h-9 items-center gap-1 rounded-lg bg-brand-light border border-brand-card px-3 text-[12px] font-semibold text-brand-dark"
+                    className="inline-flex h-9 items-center gap-1 rounded-xl bg-brand-light border border-brand-card px-3 text-[12px] font-semibold text-brand-dark transition-transform active:scale-95"
                   >
                     <span>Abrir</span>
                     <ArrowUpRight className="h-3.5 w-3.5" />
@@ -143,14 +144,14 @@ export function LibraryTableView({
                     type="button"
                     onClick={() => onViewOriginal(doc)}
                     aria-label={`Ver original de ${doc.title}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-card text-brand-primary"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-card text-brand-primary transition-transform active:scale-95"
                   >
                     <Eye className="h-3.5 w-3.5" />
                   </button>
                   <button
                     type="button"
                     onClick={() => onQuickExport(doc)}
-                    className="inline-flex h-9 items-center gap-1 rounded-lg bg-brand-primary px-3 text-[12px] font-semibold text-white"
+                    className="inline-flex h-9 items-center gap-1 rounded-xl bg-brand-primary px-3 text-[12px] font-semibold text-white transition-transform active:scale-95"
                   >
                     <Download className="h-3.5 w-3.5" />
                     <span>Exportar</span>
@@ -159,7 +160,7 @@ export function LibraryTableView({
                     type="button"
                     onClick={() => onShareDocument(doc)}
                     aria-label={`Compartir ${doc.title}`}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-card text-brand-dark"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-card text-brand-dark transition-transform active:scale-95"
                   >
                     <Share2 className="h-3.5 w-3.5" />
                   </button>
@@ -171,17 +172,17 @@ export function LibraryTableView({
       </div>
 
       {/* Vista tablet y escritorio (>= md) */}
-      <div className="hidden md:block rounded-2xl bg-white border border-brand-card overflow-hidden">
+      <div className="hidden md:block rounded-2xl bg-white border border-brand-card overflow-hidden shadow-azure-floating">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-brand-light border-b border-brand-card text-[12px] font-semibold text-brand-dark">
-                <th className="py-3 px-5">Documento</th>
-                <th className="py-3 px-4">Formato</th>
-                <th className="py-3 px-4">Origen</th>
-                <th className="py-3 px-4 text-right">Palabras</th>
-                <th className="py-3 px-4 text-right">Fecha</th>
-                <th className="py-3 px-5 text-right">Acciones</th>
+              <tr className="bg-brand-light/85 border-b border-brand-card text-[12px] font-semibold text-brand-dark">
+                <th className="py-3.5 px-5">Documento</th>
+                <th className="py-3.5 px-4">Formato</th>
+                <th className="py-3.5 px-4">Origen</th>
+                <th className="py-3.5 px-4 text-right">Palabras</th>
+                <th className="py-3.5 px-4 text-right">Fecha</th>
+                <th className="py-3.5 px-5 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-card/60 text-[13px] text-brand-dark">
@@ -198,9 +199,9 @@ export function LibraryTableView({
                 filtered.map((doc) => (
                   <tr
                     key={doc.id}
-                    className="hover:bg-brand-light/60 transition-colors"
+                    className="hover:bg-brand-light/65 transition-colors duration-150"
                   >
-                    <td className="py-3 px-5 max-w-md">
+                    <td className="py-3.5 px-5 max-w-md">
                       <button
                         type="button"
                         onClick={() => onOpenDocument(doc)}
@@ -212,28 +213,28 @@ export function LibraryTableView({
                         {doc.fileName}
                       </span>
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="rounded-full bg-brand-card px-2.5 py-0.5 text-[10px] font-bold tracking-[0.05em] text-brand-dark">
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <span className="rounded-full bg-brand-light border border-brand-card px-2.5 py-0.5 text-[10px] font-bold tracking-[0.05em] text-brand-dark">
                         {doc.fileType}
                       </span>
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-brand-dark/80">
+                    <td className="py-3.5 px-4 whitespace-nowrap text-brand-dark/80">
                       {doc.isOwnedByMe ? "Propio" : doc.ownerName}
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap text-brand-dark/80">
+                    <td className="py-3.5 px-4 text-right tabular-nums whitespace-nowrap text-brand-dark/80">
                       {doc.wordCountSummary.toLocaleString("es-ES")} /{" "}
                       {doc.wordCountOriginal.toLocaleString("es-ES")}
                     </td>
-                    <td className="py-3 px-4 text-right tabular-nums whitespace-nowrap text-brand-dark/75">
+                    <td className="py-3.5 px-4 text-right tabular-nums whitespace-nowrap text-brand-dark/75">
                       {doc.createdAt}
                     </td>
-                    <td className="py-3 px-5 text-right whitespace-nowrap">
+                    <td className="py-3.5 px-5 text-right whitespace-nowrap">
                       <div className="inline-flex items-center gap-1.5">
                         <button
                           type="button"
                           onClick={() => onOpenDocument(doc)}
                           aria-label={`Abrir ${doc.title}`}
-                          className="inline-flex h-8 items-center gap-1 rounded-lg bg-brand-light border border-brand-card px-2.5 text-[12px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary"
+                          className="inline-flex h-8 items-center gap-1 rounded-lg bg-brand-light border border-brand-card px-2.5 text-[12px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-all duration-150 active:scale-95"
                         >
                           <span>Abrir</span>
                           <ArrowUpRight className="h-3.5 w-3.5" />
@@ -243,7 +244,7 @@ export function LibraryTableView({
                           onClick={() => onViewOriginal(doc)}
                           aria-label={`Ver original de ${doc.title}`}
                           title="Ver documento original"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand-card text-brand-primary hover:bg-brand-light hover:border-brand-accent"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg border border-brand-card text-brand-primary hover:bg-brand-light hover:border-brand-accent transition-all duration-150 active:scale-95"
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </button>
@@ -252,7 +253,7 @@ export function LibraryTableView({
                           onClick={() => onQuickExport(doc)}
                           aria-label={`Exportar ${doc.title}`}
                           title="Exportar"
-                          className="inline-flex h-8 items-center gap-1 rounded-lg bg-brand-primary px-2.5 text-[12px] font-semibold text-white hover:bg-brand-dark"
+                          className="inline-flex h-8 items-center gap-1 rounded-lg bg-brand-primary px-2.5 text-[12px] font-semibold text-white hover:bg-brand-dark transition-all duration-150 active:scale-95"
                         >
                           <Download className="h-3.5 w-3.5" />
                           <span>Exportar</span>
@@ -262,7 +263,7 @@ export function LibraryTableView({
                           onClick={() => onShareDocument(doc)}
                           aria-label={`Compartir ${doc.title}`}
                           title="Compartir"
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-card/40"
+                          className="flex h-8 w-8 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-card/40 transition-all duration-150 active:scale-95"
                         >
                           <Share2 className="h-3.5 w-3.5" />
                         </button>

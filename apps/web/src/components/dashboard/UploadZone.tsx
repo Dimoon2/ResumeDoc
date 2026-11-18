@@ -5,13 +5,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from "react";
-import {
-  AlertCircle,
-  FileText,
-  FileUp,
-  FolderInput,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, FileUp, FolderInput, Loader2 } from "lucide-react";
 import { summaryService } from "../../services/summaryService";
 import type { SummaryDocument, User } from "../../types/summary";
 import {
@@ -24,14 +18,12 @@ interface UploadZoneProps {
   currentUser: User;
   onDocumentSynthesized: (doc: SummaryDocument) => void;
   onImportSummaryFile: (file: File) => Promise<unknown>;
-  onOpenPasteImport: () => void;
 }
 
 export function UploadZone({
   currentUser,
   onDocumentSynthesized,
   onImportSummaryFile,
-  onOpenPasteImport,
 }: UploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -72,7 +64,8 @@ export function UploadZone({
         file,
         fileName: file.name,
         fileType,
-        mimeType: file.type || (fileType === "PDF" ? "application/pdf" : "image/jpeg"),
+        mimeType:
+          file.type || (fileType === "PDF" ? "application/pdf" : "image/jpeg"),
         fileSizeLabel: formatBytes(file.size),
         depth: "executive",
         currentUser,
@@ -139,10 +132,10 @@ export function UploadZone({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`rounded-2xl border-2 border-dashed p-5 sm:p-8 lg:p-10 text-center transition-all duration-150 ${
+        className={`group rounded-2xl border-2 border-dashed p-5 sm:p-8 lg:p-10 text-center transition-all duration-200 ${
           isDragOver
-            ? "bg-brand-card border-brand-primary shadow-azure-dropzone scale-[1.005]"
-            : "bg-brand-card/35 border-brand-accent hover:bg-brand-card/45"
+            ? "bg-brand-card border-brand-primary shadow-azure-dropzone scale-[1.01]"
+            : "bg-gradient-to-b from-white/75 to-brand-card/30 border-brand-accent hover:border-brand-primary/80 hover:from-white/90 hover:to-brand-card/40 hover:shadow-azure-floating"
         }`}
       >
         <input
@@ -165,10 +158,10 @@ export function UploadZone({
 
         <div className="mx-auto flex max-w-2xl flex-col items-center">
           <div
-            className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl transition-transform duration-150 ${
+            className={`mb-4 flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-200 ${
               isDragOver || isProcessing
-                ? "bg-brand-primary text-white scale-105"
-                : "bg-white border border-brand-accent text-brand-primary"
+                ? "bg-brand-primary text-white scale-110 shadow-md shadow-brand-primary/30"
+                : "bg-white border border-brand-accent text-brand-primary shadow-sm group-hover:-translate-y-1 group-hover:shadow-azure-floating"
             }`}
           >
             {isProcessing ? (
@@ -178,24 +171,35 @@ export function UploadZone({
             )}
           </div>
 
-          <h2 className="font-display text-[17px] sm:text-[20px] font-semibold tracking-[-0.01em] text-brand-dark">
+          <h2 className="font-display text-[17px] sm:text-[21px] font-bold tracking-[-0.015em] text-brand-dark">
             {isProcessing
               ? `Procesando "${processingLabel}"...`
               : isDragOver
                 ? "Suelta el archivo para resumirlo inmediatamente"
-                : "Arrastra un PDF o imagen (PNG, JPG, JPEG) para resumirlo"}
+                : "Arrastra un PDF o imagen aquí para resumirlo"}
           </h2>
 
           <p className="mt-2 text-[13px] sm:text-[14px] text-brand-dark/80">
-            Al soltar un archivo válido se procesa automáticamente y aparece en{" "}
+            Se procesará automáticamente y aparecerá en{" "}
             <span className="font-semibold text-brand-dark">Mis Resúmenes</span>.
           </p>
 
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+            {["PDF", "PNG", "JPG", "JPEG"].map((ext) => (
+              <span
+                key={ext}
+                className="rounded-full bg-white/90 border border-brand-card px-2.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-brand-dark/80"
+              >
+                {ext}
+              </span>
+            ))}
+          </div>
+
           {isProcessing && (
-            <div className="mt-5 w-full max-w-md space-y-1.5">
-              <div className="h-2 w-full rounded-full bg-brand-card overflow-hidden">
+            <div className="mt-5 w-full max-w-md space-y-1.5 animate-fade-up">
+              <div className="h-2.5 w-full rounded-full bg-brand-card overflow-hidden p-0.5">
                 <div
-                  className="h-full rounded-full bg-brand-primary transition-all duration-300"
+                  className="h-full rounded-full bg-brand-primary transition-all duration-300 ease-out"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -210,7 +214,7 @@ export function UploadZone({
               type="button"
               disabled={isProcessing}
               onClick={() => uploadInputRef.current?.click()}
-              className="inline-flex h-11 sm:h-[42px] items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-[14px] font-semibold text-white transition-all duration-150 hover:bg-brand-dark disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent whitespace-nowrap"
+              className="inline-flex h-11 sm:h-[42px] items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 text-[14px] font-semibold text-white shadow-sm shadow-brand-primary/25 transition-all duration-200 hover:bg-brand-dark hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent whitespace-nowrap"
             >
               <FileUp className="h-4 w-4" />
               <span>Subir archivo</span>
@@ -220,27 +224,17 @@ export function UploadZone({
               type="button"
               disabled={isProcessing}
               onClick={() => importInputRef.current?.click()}
-              className="inline-flex h-11 sm:h-[42px] items-center justify-center gap-2 rounded-lg bg-white border border-brand-accent px-4 text-[14px] font-semibold text-brand-dark transition-all duration-150 hover:bg-brand-light hover:border-brand-primary disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent whitespace-nowrap"
+              className="inline-flex h-11 sm:h-[42px] items-center justify-center gap-2 rounded-xl bg-white border border-brand-accent px-4 text-[14px] font-semibold text-brand-dark transition-all duration-200 hover:bg-brand-light hover:border-brand-primary hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent whitespace-nowrap"
             >
               <FolderInput className="h-4 w-4 text-brand-primary" />
               <span>Importar</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={isProcessing}
-              onClick={onOpenPasteImport}
-              className="inline-flex h-11 sm:h-[42px] items-center justify-center gap-2 rounded-lg bg-white border border-brand-card px-4 text-[14px] font-semibold text-brand-dark transition-all duration-150 hover:border-brand-accent hover:text-brand-primary disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent whitespace-nowrap"
-            >
-              <FileText className="h-4 w-4" />
-              <span>Pegar texto</span>
             </button>
           </div>
 
           {errorMsg && (
             <div
               role="alert"
-              className="mt-4 w-full max-w-lg rounded-xl bg-white border border-brand-dark px-4 py-3 flex items-start gap-2.5 text-left text-[13px] font-medium text-brand-dark"
+              className="animate-fade-up mt-4 w-full max-w-lg rounded-xl bg-white border border-brand-dark px-4 py-3 flex items-start gap-2.5 text-left text-[13px] font-medium text-brand-dark shadow-sm"
             >
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-brand-primary" />
               <span>{errorMsg}</span>

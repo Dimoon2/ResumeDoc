@@ -131,15 +131,15 @@ export function ImportPreviewModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-dark/25 backdrop-blur-[2px] overscroll-contain"
+      className="animate-backdrop-in fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-dark/25 backdrop-blur-[2px] overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-labelledby="import-modal-title"
     >
-      <div className="w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white border border-brand-card shadow-azure-active overflow-hidden">
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-brand-card bg-brand-light flex items-center justify-between gap-3 shrink-0">
+      <div className="animate-modal-in w-full max-w-2xl max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white border border-brand-card shadow-azure-active overflow-hidden">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-brand-card bg-gradient-to-r from-brand-light to-white flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card text-brand-primary">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card text-brand-primary shadow-sm">
               <FileText className="h-5 w-5" />
             </div>
             <div className="min-w-0">
@@ -160,7 +160,7 @@ export function ImportPreviewModal({
             onClick={onClose}
             disabled={isGenerating}
             aria-label="Cerrar ventana"
-            className="flex h-10 w-10 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-card/40 disabled:opacity-50"
+            className="flex h-10 w-10 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-card/40 transition-colors active:scale-95 disabled:opacity-50"
           >
             <X className="h-5 w-5" />
           </button>
@@ -189,7 +189,7 @@ export function ImportPreviewModal({
                 value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
                 disabled={isGenerating}
-                className="h-[42px] w-full rounded-lg bg-white border border-brand-card px-3 text-[14px] text-brand-dark focus:outline-none focus:border-brand-primary focus:border-[1.5px]"
+                className="h-[42px] w-full rounded-xl bg-white border border-brand-card px-3 text-[14px] text-brand-dark transition-all duration-150 focus:outline-none focus:border-brand-primary focus:shadow-[0_0_0_3px_rgba(127,196,242,0.28)]"
               />
             </div>
 
@@ -201,7 +201,7 @@ export function ImportPreviewModal({
                 type="button"
                 disabled={isGenerating}
                 onClick={() => fileInputRef.current?.click()}
-                className="h-[42px] w-full flex items-center justify-between rounded-lg bg-brand-light border border-brand-card px-3.5 text-[13px] font-semibold text-brand-dark hover:border-brand-accent transition-colors"
+                className="h-[42px] w-full flex items-center justify-between rounded-xl bg-brand-light border border-brand-card px-3.5 text-[13px] font-semibold text-brand-dark hover:border-brand-accent transition-all duration-150 active:scale-[0.99]"
               >
                 <span className="inline-flex items-center gap-2 truncate">
                   <FileUp className="h-4 w-4 text-brand-primary shrink-0" />
@@ -233,10 +233,10 @@ export function ImportPreviewModal({
                     type="button"
                     disabled={isGenerating}
                     onClick={() => setDepth(option.id as SynthesisDepth)}
-                    className={`h-10 sm:h-9 rounded-lg text-[13px] font-semibold transition-all duration-150 whitespace-nowrap ${
+                    className={`h-10 sm:h-9 rounded-lg text-[13px] font-semibold transition-all duration-150 active:scale-[0.98] whitespace-nowrap ${
                       active
-                        ? "bg-brand-primary text-white"
-                        : "text-brand-dark hover:bg-white/70"
+                        ? "bg-brand-primary text-white shadow-sm"
+                        : "text-brand-dark hover:bg-white/80"
                     }`}
                   >
                     {option.label}
@@ -247,7 +247,7 @@ export function ImportPreviewModal({
           </div>
 
           {selectedFile ? (
-            <div className="rounded-2xl bg-brand-light border border-brand-card p-5 flex flex-wrap items-center justify-between gap-3">
+            <div className="animate-fade-up rounded-2xl bg-brand-light border border-brand-card p-5 flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-1 min-w-0">
                 <p className="text-[14px] font-semibold text-brand-dark">
                   Archivo listo para analizar ({effectiveFileType})
@@ -290,13 +290,13 @@ export function ImportPreviewModal({
                 onChange={(e) => setPastedText(e.target.value)}
                 disabled={isGenerating}
                 placeholder="Pega aquí actas, contratos, especificaciones o informes para resumir..."
-                className="w-full rounded-xl bg-white border border-brand-card p-3.5 text-[14px] leading-[22px] text-brand-dark placeholder:text-brand-accent focus:outline-none focus:border-brand-primary focus:border-[1.5px]"
+                className="w-full rounded-xl bg-white border border-brand-card p-3.5 text-[14px] leading-[22px] text-brand-dark placeholder:text-brand-accent transition-all duration-150 focus:outline-none focus:border-brand-primary focus:shadow-[0_0_0_3px_rgba(127,196,242,0.28)]"
               />
             </div>
           )}
 
           {isGenerating && (
-            <div className="space-y-2 rounded-xl bg-brand-light border border-brand-card p-4">
+            <div className="animate-fade-up space-y-2 rounded-xl bg-brand-light border border-brand-card p-4">
               <div className="flex items-center justify-between text-[13px] font-semibold text-brand-dark">
                 <span className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-brand-primary" />
@@ -304,9 +304,9 @@ export function ImportPreviewModal({
                 </span>
                 <span className="tabular-nums">{progress}%</span>
               </div>
-              <div className="h-2 w-full rounded-full bg-brand-card overflow-hidden">
+              <div className="h-2.5 w-full rounded-full bg-brand-card overflow-hidden p-0.5">
                 <div
-                  className="h-full rounded-full bg-brand-primary transition-all duration-300"
+                  className="h-full rounded-full bg-brand-primary transition-all duration-300 ease-out"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -316,7 +316,7 @@ export function ImportPreviewModal({
           {errorMsg && (
             <div
               role="alert"
-              className="rounded-xl bg-brand-light border border-brand-dark p-3.5 flex items-start gap-2.5 text-[13px] font-medium text-brand-dark"
+              className="animate-fade-up rounded-xl bg-brand-light border border-brand-dark p-3.5 flex items-start gap-2.5 text-[13px] font-medium text-brand-dark"
             >
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-brand-primary" />
               <span>{errorMsg}</span>
@@ -329,7 +329,7 @@ export function ImportPreviewModal({
             type="button"
             onClick={onClose}
             disabled={isGenerating}
-            className="h-11 sm:h-[42px] rounded-lg bg-white border border-brand-card px-4 text-[14px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-colors disabled:opacity-50"
+            className="h-11 sm:h-[42px] rounded-xl bg-white border border-brand-card px-4 text-[14px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-all duration-150 active:scale-[0.98] disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -337,7 +337,7 @@ export function ImportPreviewModal({
             type="button"
             onClick={handleGenerate}
             disabled={isGenerating}
-            className="inline-flex h-11 sm:h-[42px] items-center gap-2 rounded-lg bg-brand-primary px-5 text-[14px] font-semibold text-white transition-all duration-150 hover:bg-brand-dark disabled:opacity-60 whitespace-nowrap"
+            className="inline-flex h-11 sm:h-[42px] items-center gap-2 rounded-xl bg-brand-primary px-5 text-[14px] font-semibold text-white shadow-sm shadow-brand-primary/25 transition-all duration-150 hover:bg-brand-dark active:scale-[0.98] disabled:opacity-60 whitespace-nowrap"
           >
             {isGenerating ? (
               <>
