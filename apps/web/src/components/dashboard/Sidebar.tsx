@@ -45,9 +45,9 @@ export function Sidebar({
               onSelectNav("my-summaries");
               onCloseMobile();
             }}
-            className="flex items-center gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent rounded-lg"
+            className="group flex items-center gap-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent rounded-lg"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-primary text-white shrink-0">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary text-white shadow-sm shadow-brand-primary/30 transition-transform duration-200 group-hover:scale-105 shrink-0">
               <FileText className="h-5 w-5" />
             </div>
             <span className="font-display text-[19px] font-extrabold tracking-[-0.03em] text-brand-dark whitespace-nowrap">
@@ -59,14 +59,14 @@ export function Sidebar({
             type="button"
             onClick={onCloseMobile}
             aria-label="Cerrar menú lateral"
-            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-light transition-colors"
+            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-light transition-colors active:scale-95"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <nav aria-label="Navegación principal" className="space-y-1.5">
-          <p className="px-3 pb-1 text-[11px] font-semibold tracking-[0.04em] text-brand-dark/65">
+          <p className="px-3 pb-1 text-[11px] font-semibold tracking-[0.04em] text-brand-dark/60 uppercase">
             Espacio de trabajo
           </p>
           {navItems.map((item) => {
@@ -80,19 +80,25 @@ export function Sidebar({
                   onSelectNav(item.id);
                   onCloseMobile();
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[14px] font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent ${
+                className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-semibold transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent ${
                   isActive
-                    ? "bg-brand-primary text-white"
+                    ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/25"
                     : "text-brand-dark hover:bg-brand-light hover:text-brand-primary"
                 }`}
               >
                 <span className="flex items-center gap-3 whitespace-nowrap shrink-0">
-                  <Icon className="h-4 w-4 shrink-0" />
+                  <Icon
+                    className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+                      isActive ? "" : "group-hover:scale-110"
+                    }`}
+                  />
                   <span>{item.label}</span>
                 </span>
                 <span
-                  className={`text-[12px] font-semibold tabular-nums ${
-                    isActive ? "text-white/90" : "text-brand-dark/70"
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums transition-colors ${
+                    isActive
+                      ? "bg-white/20 text-white"
+                      : "bg-brand-light text-brand-dark/75 group-hover:bg-brand-card/60"
                   }`}
                 >
                   {item.count}
@@ -103,9 +109,9 @@ export function Sidebar({
         </nav>
       </div>
 
-      <div className="p-4 border-t border-brand-card bg-brand-light">
-        <div className="flex items-center justify-between gap-2 px-1 py-1">
-          <div className="flex items-center gap-3 min-w-0">
+      <div className="p-4 border-t border-brand-card bg-brand-light/70">
+        <div className="rounded-xl bg-white border border-brand-card/80 p-2.5 flex items-center justify-between gap-2 shadow-sm">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-card text-[12px] font-bold text-brand-dark">
               {currentUser.initials}
             </div>
@@ -113,7 +119,7 @@ export function Sidebar({
               <p className="truncate text-[13px] font-semibold text-brand-dark">
                 {currentUser.name}
               </p>
-              <p className="truncate text-[11px] text-brand-dark/70">
+              <p className="truncate text-[11px] text-brand-dark/65">
                 {currentUser.email || currentUser.role}
               </p>
             </div>
@@ -124,7 +130,7 @@ export function Sidebar({
             onClick={onLogout}
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark/75 hover:bg-white hover:text-brand-primary transition-colors"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 hover:bg-brand-light hover:text-brand-primary transition-all duration-150 active:scale-95"
           >
             <LogOut className="h-4 w-4" />
           </button>
@@ -142,11 +148,11 @@ export function Sidebar({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-brand-dark/25 backdrop-blur-[2px]"
+            className="animate-backdrop-in fixed inset-0 bg-brand-dark/25 backdrop-blur-[2px]"
             onClick={onCloseMobile}
             aria-hidden="true"
           />
-          <aside className="relative z-10 w-[280px] max-w-[85vw] h-full shadow-azure-active">
+          <aside className="animate-drawer-in relative z-10 w-[280px] max-w-[85vw] h-full shadow-azure-active">
             {sidebarContent}
           </aside>
         </div>

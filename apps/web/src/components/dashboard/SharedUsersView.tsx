@@ -43,7 +43,7 @@ export function SharedUsersView({
 
   if (!selectedUser) {
     return (
-      <div className="space-y-6">
+      <div key="users-list" className="animate-fade-up space-y-6">
         <div>
           <h1 className="font-display text-[22px] sm:text-[28px] font-semibold leading-[30px] sm:leading-[36px] tracking-[-0.015em] text-brand-dark">
             Compartidos
@@ -54,7 +54,7 @@ export function SharedUsersView({
         </div>
 
         {accessibleUsers.length === 0 ? (
-          <div className="rounded-2xl bg-white border border-brand-card p-8 sm:p-12 text-center">
+          <div className="rounded-2xl bg-white border border-brand-card p-8 sm:p-12 text-center shadow-sm">
             <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light text-brand-primary">
               <Users className="h-5 w-5" />
             </div>
@@ -68,7 +68,7 @@ export function SharedUsersView({
         ) : (
           <section
             aria-label="Usuarios a los que tienes acceso"
-            className="rounded-2xl bg-white border border-brand-card divide-y divide-brand-card/75 overflow-hidden"
+            className="rounded-2xl bg-white border border-brand-card divide-y divide-brand-card/75 overflow-hidden shadow-sm"
           >
             {accessibleUsers.map((user) => {
               const count = sharedDocuments.filter(
@@ -80,10 +80,10 @@ export function SharedUsersView({
                   key={user.id}
                   type="button"
                   onClick={() => onSelectUser(user.id)}
-                  className="group w-full px-4 sm:px-5 py-4 text-left transition-colors duration-150 hover:bg-brand-light/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-accent"
+                  className="group w-full px-4 sm:px-5 py-4 text-left transition-all duration-150 hover:bg-brand-light/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-accent"
                 >
                   <div className="flex items-center gap-3.5 sm:gap-4 min-w-0">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-card text-[13px] font-bold text-brand-dark">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-card text-[13px] font-bold text-brand-dark transition-transform duration-150 group-hover:scale-105">
                       {user.initials}
                     </div>
                     <div className="min-w-0">
@@ -100,10 +100,10 @@ export function SharedUsersView({
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pl-[58px] sm:pl-0">
-                    <span className="rounded-full bg-brand-card px-3 py-1 text-[12px] font-bold text-brand-dark tabular-nums whitespace-nowrap">
+                    <span className="rounded-full bg-brand-light border border-brand-card px-3 py-1 text-[12px] font-bold text-brand-dark tabular-nums whitespace-nowrap group-hover:bg-brand-card/60 transition-colors">
                       {count} {count === 1 ? "resumen" : "resúmenes"}
                     </span>
-                    <ChevronRight className="h-4 w-4 text-brand-dark/50 group-hover:text-brand-primary group-hover:translate-x-0.5 transition-all" />
+                    <ChevronRight className="h-4 w-4 text-brand-dark/50 group-hover:text-brand-primary group-hover:translate-x-1 transition-all duration-150" />
                   </div>
                 </button>
               );
@@ -119,25 +119,25 @@ export function SharedUsersView({
   );
 
   return (
-    <div className="space-y-6">
+    <div key={selectedUser.id} className="animate-fade-up space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => onSelectUser(null)}
-          className="inline-flex h-11 sm:h-10 items-center gap-2 rounded-lg bg-white border border-brand-card px-3.5 text-[13px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-colors"
+          className="inline-flex h-11 sm:h-10 items-center gap-2 rounded-xl bg-white border border-brand-card px-3.5 text-[13px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-all duration-150 active:scale-[0.98]"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Volver a usuarios compartidos</span>
         </button>
 
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card">
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card shadow-sm">
           <button
             type="button"
             onClick={() => setCardLayout("grid")}
             aria-label="Vista en cuadrícula"
-            className={`flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
               cardLayout === "grid"
-                ? "bg-brand-primary text-white"
+                ? "bg-brand-primary text-white shadow-sm"
                 : "text-brand-dark hover:bg-brand-light"
             }`}
           >
@@ -147,9 +147,9 @@ export function SharedUsersView({
             type="button"
             onClick={() => setCardLayout("list")}
             aria-label="Vista en lista"
-            className={`flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg transition-colors ${
+            className={`flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
               cardLayout === "list"
-                ? "bg-brand-primary text-white"
+                ? "bg-brand-primary text-white shadow-sm"
                 : "text-brand-dark hover:bg-brand-light"
             }`}
           >
@@ -191,7 +191,7 @@ export function SharedUsersView({
       </div>
 
       {userDocuments.length === 0 ? (
-        <div className="rounded-2xl bg-white border border-brand-card p-8 sm:p-12 text-center">
+        <div className="rounded-2xl bg-white border border-brand-card p-8 sm:p-12 text-center shadow-sm">
           <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light text-brand-primary">
             <FileText className="h-5 w-5" />
           </div>
@@ -204,32 +204,42 @@ export function SharedUsersView({
         </div>
       ) : cardLayout === "list" ? (
         <div className="space-y-4">
-          {userDocuments.map((doc) => (
-            <DocumentCard
+          {userDocuments.map((doc, idx) => (
+            <div
               key={doc.id}
-              doc={doc}
-              layout="list"
-              onOpenDocument={onOpenDocument}
-              onViewOriginal={onViewOriginal}
-              onQuickExport={onQuickExport}
-              onOpenExportModal={onOpenExportModal}
-              onShareDocument={onShareDocument}
-            />
+              className="animate-fade-up"
+              style={{ animationDelay: `${Math.min(idx, 6) * 45}ms` }}
+            >
+              <DocumentCard
+                doc={doc}
+                layout="list"
+                onOpenDocument={onOpenDocument}
+                onViewOriginal={onViewOriginal}
+                onQuickExport={onQuickExport}
+                onOpenExportModal={onOpenExportModal}
+                onShareDocument={onShareDocument}
+              />
+            </div>
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {userDocuments.map((doc) => (
-            <DocumentCard
+          {userDocuments.map((doc, idx) => (
+            <div
               key={doc.id}
-              doc={doc}
-              layout="grid"
-              onOpenDocument={onOpenDocument}
-              onViewOriginal={onViewOriginal}
-              onQuickExport={onQuickExport}
-              onOpenExportModal={onOpenExportModal}
-              onShareDocument={onShareDocument}
-            />
+              className="animate-fade-up h-full"
+              style={{ animationDelay: `${Math.min(idx, 6) * 45}ms` }}
+            >
+              <DocumentCard
+                doc={doc}
+                layout="grid"
+                onOpenDocument={onOpenDocument}
+                onViewOriginal={onViewOriginal}
+                onQuickExport={onQuickExport}
+                onOpenExportModal={onOpenExportModal}
+                onShareDocument={onShareDocument}
+              />
+            </div>
           ))}
         </div>
       )}

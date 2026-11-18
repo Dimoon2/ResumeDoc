@@ -188,167 +188,182 @@ export function DashboardWorkspace() {
       toastMessage={toastMessage}
       onDismissToast={dismissToast}
     >
-      {activeDocument ? (
-        <SynthesisReaderView
-          doc={activeDocument}
-          workspaceUsers={users}
-          onBack={() => setActiveDocumentId(null)}
-          onViewOriginal={(doc) => setOriginalTargetDoc(doc)}
-          onExport={(doc) => setExportTargetDoc(doc)}
-          onShare={(doc) => setShareTargetDocId(doc.id)}
-        />
-      ) : activeNav === "my-summaries" ? (
-        <div className="space-y-8 sm:space-y-10">
-          <UploadZone
-            currentUser={currentUser}
-            onDocumentSynthesized={handleDocumentSynthesizedInline}
-            onImportSummaryFile={importSummaryFile}
-            onOpenPasteImport={() => setImportModalOpen(true)}
+      <div
+        key={activeDocument ? activeDocument.id : activeNav}
+        className="animate-fade-up"
+      >
+        {activeDocument ? (
+          <SynthesisReaderView
+            doc={activeDocument}
+            workspaceUsers={users}
+            onBack={() => setActiveDocumentId(null)}
+            onViewOriginal={(doc) => setOriginalTargetDoc(doc)}
+            onExport={(doc) => setExportTargetDoc(doc)}
+            onShare={(doc) => setShareTargetDocId(doc.id)}
           />
+        ) : activeNav === "my-summaries" ? (
+          <div className="space-y-8 sm:space-y-10">
+            <UploadZone
+              currentUser={currentUser}
+              onDocumentSynthesized={handleDocumentSynthesizedInline}
+              onImportSummaryFile={importSummaryFile}
+              onOpenPasteImport={() => setImportModalOpen(true)}
+            />
 
-          <section aria-label="Mis Resúmenes" className="space-y-5 sm:space-y-6">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-              <div>
-                <h1 className="font-display text-[22px] sm:text-[28px] font-semibold leading-[30px] sm:leading-[36px] tracking-[-0.015em] text-brand-dark">
-                  Mis Resúmenes
-                </h1>
-                <p className="mt-1 text-[14px] text-brand-dark/75">
-                  Resúmenes generados e importados, listos para revisión, consulta del original y exportación.
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card overflow-x-auto max-w-full">
-                  {(["ALL", "PDF", "PNG", "JPG"] as const).map((fmt) => {
-                    const active = formatFilter === fmt;
-                    return (
-                      <button
-                        key={fmt}
-                        type="button"
-                        onClick={() => setFormatFilter(fmt)}
-                        className={`h-8 px-3 rounded-lg text-[12px] font-semibold transition-colors whitespace-nowrap shrink-0 ${
-                          active
-                            ? "bg-brand-primary text-white"
-                            : "text-brand-dark hover:bg-brand-light"
-                        }`}
-                      >
-                        {fmt === "ALL" ? "Todos" : fmt}
-                      </button>
-                    );
-                  })}
+            <section aria-label="Mis Resúmenes" className="space-y-5 sm:space-y-6">
+              <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+                <div>
+                  <h1 className="font-display text-[22px] sm:text-[28px] font-semibold leading-[30px] sm:leading-[36px] tracking-[-0.015em] text-brand-dark">
+                    Mis Resúmenes
+                  </h1>
+                  <p className="mt-1 text-[14px] text-brand-dark/75">
+                    Resúmenes generados e importados, listos para revisión, consulta del original y exportación.
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setCardLayout("grid")}
-                    aria-label="Vista en cuadrícula"
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                      cardLayout === "grid"
-                        ? "bg-brand-primary text-white"
-                        : "text-brand-dark hover:bg-brand-light"
-                    }`}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCardLayout("list")}
-                    aria-label="Vista en lista"
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
-                      cardLayout === "list"
-                        ? "bg-brand-primary text-white"
-                        : "text-brand-dark hover:bg-brand-light"
-                    }`}
-                  >
-                    <List className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
+                <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card overflow-x-auto max-w-full shadow-sm">
+                    {(["ALL", "PDF", "PNG", "JPG"] as const).map((fmt) => {
+                      const active = formatFilter === fmt;
+                      return (
+                        <button
+                          key={fmt}
+                          type="button"
+                          onClick={() => setFormatFilter(fmt)}
+                          className={`h-8 px-3 rounded-lg text-[12px] font-semibold transition-all duration-150 active:scale-[0.97] whitespace-nowrap shrink-0 ${
+                            active
+                              ? "bg-brand-primary text-white shadow-sm"
+                              : "text-brand-dark hover:bg-brand-light"
+                          }`}
+                        >
+                          {fmt === "ALL" ? "Todos" : fmt}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-            {myDocuments.length === 0 ? (
-              <div className="rounded-2xl bg-white border border-brand-card p-8 sm:p-12 text-center space-y-3">
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light text-brand-primary">
-                  <FileText className="h-5 w-5" />
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card shrink-0 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => setCardLayout("grid")}
+                      aria-label="Vista en cuadrícula"
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
+                        cardLayout === "grid"
+                          ? "bg-brand-primary text-white shadow-sm"
+                          : "text-brand-dark hover:bg-brand-light"
+                      }`}
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCardLayout("list")}
+                      aria-label="Vista en lista"
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
+                        cardLayout === "list"
+                          ? "bg-brand-primary text-white shadow-sm"
+                          : "text-brand-dark hover:bg-brand-light"
+                      }`}
+                    >
+                      <List className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-                <h2 className="font-display text-[16px] font-semibold text-brand-dark">
-                  No se encontraron resúmenes
-                </h2>
-                <p className="text-[14px] text-brand-dark/70 max-w-md mx-auto">
-                  {normalizedQuery || formatFilter !== "ALL"
-                    ? "Ajusta tu búsqueda o cambia el filtro de formato para ver tus documentos."
-                    : "Arrastra un archivo PDF o imagen (PNG, JPG, JPEG) o importa un resumen exportado para comenzar."}
-                </p>
-                {(normalizedQuery || formatFilter !== "ALL") && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery("");
-                      setFormatFilter("ALL");
-                    }}
-                    className="inline-flex h-10 items-center rounded-lg bg-brand-light border border-brand-card px-4 text-[13px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary"
-                  >
-                    Limpiar filtros
-                  </button>
-                )}
               </div>
-            ) : cardLayout === "list" ? (
-              <div className="space-y-4">
-                {myDocuments.map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    layout="list"
-                    onOpenDocument={(d) => setActiveDocumentId(d.id)}
-                    onViewOriginal={(d) => setOriginalTargetDoc(d)}
-                    onQuickExport={(d) => exportDocumentDirect(d, "txt")}
-                    onOpenExportModal={(d) => setExportTargetDoc(d)}
-                    onShareDocument={(d) => setShareTargetDocId(d.id)}
-                    onDeleteDocument={deleteDocument}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                {myDocuments.map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    doc={doc}
-                    layout="grid"
-                    onOpenDocument={(d) => setActiveDocumentId(d.id)}
-                    onViewOriginal={(d) => setOriginalTargetDoc(d)}
-                    onQuickExport={(d) => exportDocumentDirect(d, "txt")}
-                    onOpenExportModal={(d) => setExportTargetDoc(d)}
-                    onShareDocument={(d) => setShareTargetDocId(d.id)}
-                    onDeleteDocument={deleteDocument}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-      ) : activeNav === "shared" ? (
-        <SharedUsersView
-          users={users}
-          selectedUserId={selectedSharedUserId}
-          onSelectUser={setSelectedSharedUserId}
-          sharedDocuments={sharedDocumentsFiltered}
-          onOpenDocument={(d) => setActiveDocumentId(d.id)}
-          onViewOriginal={(d) => setOriginalTargetDoc(d)}
-          onQuickExport={(d) => exportDocumentDirect(d, "txt")}
-          onOpenExportModal={(d) => setExportTargetDoc(d)}
-          onShareDocument={(d) => setShareTargetDocId(d.id)}
-        />
-      ) : (
-        <LibraryTableView
-          documents={libraryDocuments}
-          onOpenDocument={(d) => setActiveDocumentId(d.id)}
-          onViewOriginal={(d) => setOriginalTargetDoc(d)}
-          onQuickExport={(d) => exportDocumentDirect(d, "txt")}
-          onShareDocument={(d) => setShareTargetDocId(d.id)}
-        />
-      )}
+
+              {myDocuments.length === 0 ? (
+                <div className="animate-fade-up rounded-2xl bg-white border border-brand-card p-8 sm:p-12 text-center space-y-3 shadow-sm">
+                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light text-brand-primary">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <h2 className="font-display text-[16px] font-semibold text-brand-dark">
+                    No se encontraron resúmenes
+                  </h2>
+                  <p className="text-[14px] text-brand-dark/70 max-w-md mx-auto">
+                    {normalizedQuery || formatFilter !== "ALL"
+                      ? "Ajusta tu búsqueda o cambia el filtro de formato para ver tus documentos."
+                      : "Arrastra un archivo PDF o imagen (PNG, JPG, JPEG) o importa un resumen exportado para comenzar."}
+                  </p>
+                  {(normalizedQuery || formatFilter !== "ALL") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchQuery("");
+                        setFormatFilter("ALL");
+                      }}
+                      className="inline-flex h-10 items-center rounded-xl bg-brand-light border border-brand-card px-4 text-[13px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-all duration-150 active:scale-[0.98]"
+                    >
+                      Limpiar filtros
+                    </button>
+                  )}
+                </div>
+              ) : cardLayout === "list" ? (
+                <div className="space-y-4">
+                  {myDocuments.map((doc, idx) => (
+                    <div
+                      key={doc.id}
+                      className="animate-fade-up"
+                      style={{ animationDelay: `${Math.min(idx, 6) * 45}ms` }}
+                    >
+                      <DocumentCard
+                        doc={doc}
+                        layout="list"
+                        onOpenDocument={(d) => setActiveDocumentId(d.id)}
+                        onViewOriginal={(d) => setOriginalTargetDoc(d)}
+                        onQuickExport={(d) => exportDocumentDirect(d, "txt")}
+                        onOpenExportModal={(d) => setExportTargetDoc(d)}
+                        onShareDocument={(d) => setShareTargetDocId(d.id)}
+                        onDeleteDocument={deleteDocument}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                  {myDocuments.map((doc, idx) => (
+                    <div
+                      key={doc.id}
+                      className="animate-fade-up h-full"
+                      style={{ animationDelay: `${Math.min(idx, 6) * 45}ms` }}
+                    >
+                      <DocumentCard
+                        doc={doc}
+                        layout="grid"
+                        onOpenDocument={(d) => setActiveDocumentId(d.id)}
+                        onViewOriginal={(d) => setOriginalTargetDoc(d)}
+                        onQuickExport={(d) => exportDocumentDirect(d, "txt")}
+                        onOpenExportModal={(d) => setExportTargetDoc(d)}
+                        onShareDocument={(d) => setShareTargetDocId(d.id)}
+                        onDeleteDocument={deleteDocument}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+        ) : activeNav === "shared" ? (
+          <SharedUsersView
+            users={users}
+            selectedUserId={selectedSharedUserId}
+            onSelectUser={setSelectedSharedUserId}
+            sharedDocuments={sharedDocumentsFiltered}
+            onOpenDocument={(d) => setActiveDocumentId(d.id)}
+            onViewOriginal={(d) => setOriginalTargetDoc(d)}
+            onQuickExport={(d) => exportDocumentDirect(d, "txt")}
+            onOpenExportModal={(d) => setExportTargetDoc(d)}
+            onShareDocument={(d) => setShareTargetDocId(d.id)}
+          />
+        ) : (
+          <LibraryTableView
+            documents={libraryDocuments}
+            onOpenDocument={(d) => setActiveDocumentId(d.id)}
+            onViewOriginal={(d) => setOriginalTargetDoc(d)}
+            onQuickExport={(d) => exportDocumentDirect(d, "txt")}
+            onShareDocument={(d) => setShareTargetDocId(d.id)}
+          />
+        )}
+      </div>
 
       <ImportPreviewModal
         isOpen={importModalOpen}

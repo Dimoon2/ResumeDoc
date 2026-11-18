@@ -57,7 +57,7 @@ export function DashboardLayout({
         onLogout={onLogout}
       />
 
-      <div className="flex-1 min-w-0 flex flex-col bg-brand-light text-brand-dark">
+      <div className="flex-1 min-w-0 flex flex-col bg-[radial-gradient(circle_at_top_right,rgba(127,196,242,0.22),transparent_48%)] bg-brand-light text-brand-dark">
         <TopBar
           breadcrumb={breadcrumb}
           searchQuery={searchQuery}
@@ -71,17 +71,19 @@ export function DashboardLayout({
             {toastMessage && (
               <div
                 role="status"
-                className="rounded-xl bg-white border border-brand-primary px-4 py-3 flex items-center justify-between gap-3 shadow-azure-floating"
+                className="animate-toast-in rounded-xl bg-white/95 backdrop-blur-sm border border-brand-primary px-4 py-3 flex items-center justify-between gap-3 shadow-azure-floating"
               >
                 <div className="flex items-center gap-2.5 text-[13px] sm:text-[14px] font-semibold text-brand-dark min-w-0">
-                  <CheckCircle2 className="h-4 w-4 text-brand-primary shrink-0" />
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-light text-brand-primary">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
                   <span className="break-words">{toastMessage}</span>
                 </div>
                 <button
                   type="button"
                   onClick={onDismissToast}
                   aria-label="Cerrar notificación"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-light"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 hover:bg-brand-light hover:text-brand-dark transition-colors active:scale-95"
                 >
                   <X className="h-4 w-4" />
                 </button>

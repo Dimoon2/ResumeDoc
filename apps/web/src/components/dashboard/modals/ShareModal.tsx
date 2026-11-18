@@ -89,13 +89,13 @@ export function ShareModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-dark/25 backdrop-blur-[2px] overscroll-contain"
+      className="animate-backdrop-in fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-dark/25 backdrop-blur-[2px] overscroll-contain"
       role="dialog"
       aria-modal="true"
       aria-labelledby="share-modal-title"
     >
-      <div className="w-full max-w-lg max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white border border-brand-card shadow-azure-active overflow-hidden">
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-brand-card bg-brand-light flex items-center justify-between gap-3 shrink-0">
+      <div className="animate-modal-in w-full max-w-lg max-h-[90dvh] flex flex-col rounded-2xl sm:rounded-3xl bg-white border border-brand-card shadow-azure-active overflow-hidden">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-brand-card bg-gradient-to-r from-brand-light to-white flex items-center justify-between gap-3 shrink-0">
           <div className="min-w-0">
             <h2
               id="share-modal-title"
@@ -111,7 +111,7 @@ export function ShareModal({
             type="button"
             onClick={onClose}
             aria-label="Cerrar compartir"
-            className="flex h-10 w-10 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-card/40"
+            className="flex h-10 w-10 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-card/40 transition-colors active:scale-95"
           >
             <X className="h-5 w-5" />
           </button>
@@ -125,7 +125,7 @@ export function ShareModal({
               onChange={(e) => setFilterText(e.target.value)}
               placeholder="Filtrar integrantes por nombre o área..."
               aria-label="Filtrar integrantes"
-              className="h-[42px] w-full rounded-lg bg-white border border-brand-card px-3.5 text-[14px] text-brand-dark placeholder:text-brand-accent focus:outline-none focus:border-brand-primary focus:border-[1.5px]"
+              className="h-[42px] w-full rounded-xl bg-white border border-brand-card px-3.5 text-[14px] text-brand-dark placeholder:text-brand-accent transition-all duration-150 focus:outline-none focus:border-brand-primary focus:shadow-[0_0_0_3px_rgba(127,196,242,0.28)]"
             />
           </div>
 
@@ -137,10 +137,10 @@ export function ShareModal({
               return (
                 <div
                   key={user.id}
-                  className={`rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                  className={`rounded-xl border p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-all duration-150 ${
                     isShared
                       ? "bg-brand-light border-brand-accent"
-                      : "bg-white border-brand-card"
+                      : "bg-white border-brand-card hover:border-brand-accent/70"
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -178,7 +178,7 @@ export function ShareModal({
                         <button
                           type="button"
                           onClick={() => toggleUserAccess(user.id)}
-                          className="h-9 sm:h-8 rounded-lg px-2.5 text-[12px] font-semibold text-brand-dark/75 hover:bg-brand-card/50 hover:text-brand-dark transition-colors"
+                          className="h-9 sm:h-8 rounded-lg px-2.5 text-[12px] font-semibold text-brand-dark/75 hover:bg-brand-card/50 hover:text-brand-dark transition-all duration-150 active:scale-95"
                         >
                           Quitar
                         </button>
@@ -187,7 +187,7 @@ export function ShareModal({
                       <button
                         type="button"
                         onClick={() => toggleUserAccess(user.id)}
-                        className="inline-flex h-9 sm:h-8 items-center gap-1.5 rounded-lg bg-white border border-brand-card px-3 text-[12px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-colors"
+                        className="inline-flex h-9 sm:h-8 items-center gap-1.5 rounded-lg bg-white border border-brand-card px-3 text-[12px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-all duration-150 active:scale-95"
                       >
                         <UserPlus className="h-3.5 w-3.5" />
                         <span>Compartir</span>
@@ -204,7 +204,7 @@ export function ShareModal({
           <button
             type="button"
             onClick={handleCopyShareLink}
-            className="inline-flex h-11 sm:h-[42px] items-center gap-2 rounded-lg bg-white border border-brand-card px-3.5 sm:px-4 text-[13px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-colors"
+            className="inline-flex h-11 sm:h-[42px] items-center gap-2 rounded-xl bg-white border border-brand-card px-3.5 sm:px-4 text-[13px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-all duration-150 active:scale-[0.98]"
           >
             {copiedLink ? (
               <>
@@ -219,7 +219,7 @@ export function ShareModal({
           <button
             type="button"
             onClick={onClose}
-            className="h-11 sm:h-[42px] rounded-lg bg-brand-primary px-5 text-[14px] font-semibold text-white hover:bg-brand-dark transition-colors"
+            className="h-11 sm:h-[42px] rounded-xl bg-brand-primary px-5 text-[14px] font-semibold text-white shadow-sm shadow-brand-primary/25 hover:bg-brand-dark transition-all duration-150 active:scale-[0.98]"
           >
             Listo
           </button>
