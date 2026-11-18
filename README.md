@@ -86,6 +86,12 @@ python -m scripts.check_db
 
 Muestra la versión de PostgreSQL y las tablas existentes.
 
+## Semilla de usuarios
+
+Para crear usuarios de prueba de forma idempotente (lee `DATABASE_URL` de
+`./.env`), sigue el procedimiento de
+[apps/api/README.md#7-semilla-de-usuarios](apps/api/README.md#7-semilla-de-usuarios).
+
 ## Estructura
 
 ```

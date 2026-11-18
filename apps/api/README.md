@@ -88,7 +88,72 @@ ADMIN_EMAIL=root@correo.com ADMIN_PASSWORD=<una-clave-fuerte> \
   PYTHONPATH=../.. venv/bin/python -m uvicorn src.main:app
 ```
 
-### 7. Pruebas
+### 7. Semilla de usuarios
+
+`scripts/seed_users.py` crea usuarios **solo si el correo no existe** (nunca
+actualiza). Los datos están en `scripts/seeds/users.json`, sin contraseñas:
+cada entrada indica la variable de entorno (`SEED_USER_PASSWORD`) que se lee
+del `.env` de la **raíz** o se pide por consola con `getpass`.
+
+Solo necesita `DATABASE_URL`; no hace falta crear `apps/api/.env` para
+sembrar (el resto de variables de la API se ignoran).
+
+> **Aviso:** usa el `DATABASE_URL` de `./.env`, que apunta a la BD real
+> (Neon). Ejecuta primero `--dry-run` para ver qué haría sin escribir nada.
+
+```bash
+# Desde la raíz del repo
+# 1. Ver qué haría (no escribe ni pide contraseñas)
+PYTHONPATH=apps/api .venv/bin/python -m scripts.seed_users --dry-run
+
+# 2. Crear solo los que falten (pide la contraseña si no está en el entorno)
+PYTHONPATH=apps/api .venv/bin/python -m scripts.seed_users
+
+# 3. Un usuario suelto (la contraseña se pide por consola)
+PYTHONPATH=apps/api .venv/bin/python -m scripts.seed_users \
+  --email prueba@resumedoc.com --name "Prueba" --role user
+```
+
+#### Añadir más usuarios
+
+1. Añade una entrada en `scripts/seeds/users.json`:
+
+   ```json
+   {
+     "email": "nuevo@resumedoc.com",
+     "name": "Nombre Apellido",
+     "role": "user",
+     "password_env": "SEED_NUEVO_PASSWORD"
+   }
+   ```
+
+   - `role: "user"` se guarda como `NOADMIN`; `"admin"` como `ADMIN`.
+   - Correo único, nombre no vacío y contraseña de al menos 8 caracteres.
+   - `password_env` puede ser la misma variable para todos o una por usuario;
+     si se omite, se usa `SEED_PASSWORD`.
+
+2. Define la contraseña en `./.env` (ignorado por git):
+
+   ```env
+   SEED_NUEVO_PASSWORD=OtraClave123!
+   ```
+
+   Si la variable no existe, el script la pide por consola.
+
+3. Ejecuta desde la raíz:
+
+   ```bash
+   PYTHONPATH=apps/api .venv/bin/python -m scripts.seed_users --dry-run
+   PYTHONPATH=apps/api .venv/bin/python -m scripts.seed_users
+   ```
+
+Solo crea usuarios nuevos: si el correo ya existe sale `[omitido]` y **no**
+cambia su contraseña ni su rol. El JSON se commitea; las contraseñas nunca.
+
+Contraseñas de demo (p. ej. `User123!`) solo para desarrollo: no deben usarse
+en producción y no se guardan en el JSON ni en git.
+
+### 8. Pruebas
 
 ```bash
 venv/bin/pytest          # suite completa (76 tests, integración incluida)
@@ -116,7 +181,8 @@ INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest tests/test_integr
 Todas obligatorias salvo las marcadas — véase `.env.example` con la
 plantilla completa (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`,
 `STORAGE_DIR`, límites de D-17, `OCR_LANG`, `CORS_ORIGINS`,
-`ADMIN_EMAIL`/`ADMIN_PASSWORD` opcionales).
+`ADMIN_EMAIL`/`ADMIN_PASSWORD` opcionales, y `SEED_USER_PASSWORD` opcional
+solo para la semilla de usuarios).
 
 ## Contrato de autenticación (con el frontend)
 
