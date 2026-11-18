@@ -7,16 +7,21 @@ spec D-06 (30 min access / 7 days refresh) and OCR language follows D-03 (spa).
 """
 
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# El `.env` vive en `apps/api/.env`: ruta absoluta para que los tests lo
+# encuentren igual ejecutados desde la raíz del repo o desde `apps/api`.
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
     """Environment-driven settings for the API and the worker."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )

@@ -25,10 +25,12 @@ los tests unitarios).
 
 ### 1. Entorno virtual
 
+El entorno vive en la **raíz del repo** (`.venv`, compartido con la capa de
+datos), no dentro de `apps/api`:
+
 ```bash
-cd apps/api
-python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+python -m venv .venv && source .venv/bin/activate
+pip install -r apps/api/requirements.txt
 ```
 
 ### 2. Variables de entorno
@@ -74,8 +76,8 @@ raíz del repo, **dos niveles** arriba de `apps/api`:
 
 ```bash
 cd apps/api
-PYTHONPATH=../.. venv/bin/python -m uvicorn src.main:app --reload   # API en :8000
-PYTHONPATH=../.. venv/bin/celery -A src.worker:celery_app worker --loglevel=info
+PYTHONPATH=../.. ../../.venv/bin/python -m uvicorn src.main:app --reload   # API en :8000
+PYTHONPATH=../.. ../../.venv/bin/celery -A src.worker:celery_app worker --loglevel=info
 ```
 
 Verificación rápida: `curl http://localhost:8000/health` →
@@ -85,14 +87,15 @@ Verificación rápida: `curl http://localhost:8000/health` →
 
 ```bash
 ADMIN_EMAIL=root@correo.com ADMIN_PASSWORD=<una-clave-fuerte> \
-  PYTHONPATH=../.. venv/bin/python -m uvicorn src.main:app
+  PYTHONPATH=../.. ../../.venv/bin/python -m uvicorn src.main:app
 ```
 
 ### 7. Pruebas
 
 ```bash
-venv/bin/pytest          # suite completa (76 tests, integración incluida)
-venv/bin/pyright         # tipos (0 errores esperados)
+cd ../..                       # raíz del repo
+.venv/bin/pytest               # suite completa (integración incluida)
+.venv/bin/pyright -p apps/api  # tipos (0 errores esperados)
 ```
 
 Las 3 de integración usan por defecto la infra del `.env`
@@ -103,12 +106,10 @@ BD `resumedoc_test` en el contenedor local:
 
 ```bash
 docker exec resumedoc_db psql -U resumedoc -d postgres -c "CREATE DATABASE resumedoc_test;"
-cd ../..
 DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
-  apps/api/venv/bin/python -m alembic upgrade head
-cd apps/api
+  .venv/bin/python -m alembic upgrade head
 INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
-INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest tests/test_integration_db.py
+INTEGRATION_REDIS_URL=redis://localhost:6379/0 .venv/bin/pytest tests/test_integration_db.py
 ```
 
 ## Variables de entorno
@@ -139,7 +140,9 @@ plantilla completa (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`,
 2. El worker extrae el texto (pypdf; página sin capa textual → rasterizar
    150 dpi + Tesseract `spa`) y escribe el texto en `STORAGE_DIR/text/{uuid}.txt`.
 3. El estado se consulta con `GET /documents/{id}/status` hasta `completed`.
-4. El texto se persiste en BD solo con un guardado explícito del usuario (D-25).
+4. Al completar, `documento.ubicacion` pasa a apuntar al texto procesado y
+   el binario original se elimina (el texto es el único contenido que se
+   conserva).
 
 ## Arquitectura
 

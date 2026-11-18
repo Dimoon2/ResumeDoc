@@ -1,7 +1,8 @@
 """Worker composition root (T-14): registers the `process_document` task.
 
 This is the second allowed composition point (SDD/plan.md §2). Run with:
-`venv/bin/celery -A src.worker:celery_app worker --loglevel=info`
+`../../.venv/bin/celery -A src.worker:celery_app worker --loglevel=info`
+(desde `apps/api`; el entorno vive en la raíz del repo).
 """
 
 import logging
