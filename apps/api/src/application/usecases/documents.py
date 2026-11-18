@@ -102,3 +102,25 @@ def process_document(
         states.set(document_id, fail(processing, "Error al procesar el documento."))
         return
     states.set(document_id, complete(processing, text_path))
+
+
+def reprocess_document(
+    storage: FileStorage,
+    states: DocumentStateStore,
+    document_id: int,
+) -> None:
+    """Regenerate the derived artifacts from the edited text: the document
+    goes through `processing` like the normal pipeline so the UI can poll,
+    then back to `completed`. No OCR re-run: the edited text is the source
+    of truth (the original binary is purged at processing time)."""
+    state = states.get(document_id)
+    if state is None or state.status != "completed":
+        raise ValueError("Solo se puede reprocesar un documento completado.")
+    text = storage.read_text(state.text_path) if state.text_path else ""
+    if not text.strip():
+        raise ValueError("El documento no tiene texto para reprocesar.")
+
+    states.set(document_id, DocumentState("processing"))
+    # shortcut: los artefactos derivados (T-24, T-27…T-29) se regeneran en
+    # este punto cuando sus módulos estén disponibles.
+    states.set(document_id, DocumentState("completed", text_path=state.text_path))

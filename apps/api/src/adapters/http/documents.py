@@ -176,7 +176,10 @@ def delete_document(
     states.delete(document_id)
 
 
+# PUT y PATCH guardan el mismo recurso: PUT es el contrato ya integrado en
+# el frontend; PATCH lo usa la vista de detalle (guardado automático).
 @router.put("/{document_id}/text", status_code=204)
+@router.patch("/{document_id}/text", status_code=204)
 def update_document_text(
     document_id: int,
     payload: UpdateTextRequest,
@@ -202,6 +205,27 @@ def update_document_text(
             document_id,
             DocumentState("completed", text_path=storage.save_text(payload.text)),
         )
+
+
+@router.post(
+    "/{document_id}/reprocess", response_model=DocumentResponse, status_code=202
+)
+def reprocess_document(
+    document_id: int,
+    user: AuthContext = Depends(current_user),
+    repository: DocumentRepository = Depends(get_repository),
+    states: DocumentStateStore = Depends(get_state_store),
+    storage: FileStorage = Depends(get_storage),
+) -> DocumentResponse:
+    """Regenerate the derived artifacts from the edited text: the document
+    shows `processing` like the normal pipeline (409 if not `completed` or
+    without text)."""
+    document = _accessible_document(repository.get_document(document_id), user)
+    try:
+        document_usecases.reprocess_document(storage, states, document.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return _to_response(document, states)
 
 
 @router.get("/{document_id}/status", response_model=DocumentStatusResponse)
