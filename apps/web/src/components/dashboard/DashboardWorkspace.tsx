@@ -207,7 +207,6 @@ export function DashboardWorkspace() {
               currentUser={currentUser}
               onDocumentSynthesized={handleDocumentSynthesizedInline}
               onImportSummaryFile={importSummaryFile}
-              onOpenPasteImport={() => setImportModalOpen(true)}
             />
 
             <section aria-label="Mis Resúmenes" className="space-y-5 sm:space-y-6">

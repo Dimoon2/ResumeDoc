@@ -5,13 +5,7 @@ import {
   type ChangeEvent,
   type DragEvent,
 } from "react";
-import {
-  AlertCircle,
-  FileText,
-  FileUp,
-  FolderInput,
-  Loader2,
-} from "lucide-react";
+import { AlertCircle, FileUp, FolderInput, Loader2 } from "lucide-react";
 import { summaryService } from "../../services/summaryService";
 import type { SummaryDocument, User } from "../../types/summary";
 import {
@@ -24,14 +18,12 @@ interface UploadZoneProps {
   currentUser: User;
   onDocumentSynthesized: (doc: SummaryDocument) => void;
   onImportSummaryFile: (file: File) => Promise<unknown>;
-  onOpenPasteImport: () => void;
 }
 
 export function UploadZone({
   currentUser,
   onDocumentSynthesized,
   onImportSummaryFile,
-  onOpenPasteImport,
 }: UploadZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -236,16 +228,6 @@ export function UploadZone({
             >
               <FolderInput className="h-4 w-4 text-brand-primary" />
               <span>Importar</span>
-            </button>
-
-            <button
-              type="button"
-              disabled={isProcessing}
-              onClick={onOpenPasteImport}
-              className="inline-flex h-11 sm:h-[42px] items-center justify-center gap-2 rounded-xl bg-white border border-brand-card px-4 text-[14px] font-semibold text-brand-dark transition-all duration-200 hover:border-brand-accent hover:text-brand-primary hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent whitespace-nowrap"
-            >
-              <FileText className="h-4 w-4" />
-              <span>Pegar texto</span>
             </button>
           </div>
 
