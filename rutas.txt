@@ -1,0 +1,171 @@
+=========================================================================
+ RUTAS DE LA API — ResumeDoc (backend)
+ Rama: fix/guardado-automatico-reprocess  (base: origin/develop)
+=========================================================================
+
+URL base local:            http://localhost:8000
+Prefijos:                  /auth  y  /documents
+Documentación interactiva: http://localhost:8000/docs   (Swagger, autogenerada)
+
+SESIÓN
+------
+- Login/registro devuelven una cookie HttpOnly llamada "access_token".
+- El navegador la envía sola: en el front, usar  credentials: "include".
+- Alternativa sin cookies (clientes manuales): cabecera
+  Authorization: Bearer <access_token>.
+- Sin sesión válida: 401 {"detail": "Token de autenticación ausente o inválido."}
+
+CORS
+----
+Origen permitido por defecto: http://localhost:5173 (variable CORS_ORIGINS),
+con credenciales (necesario para la cookie).
+
+FORMATO DE ERRORES
+------------------
+Siempre JSON:  {"detail": "mensaje en español"}
+- 401  sin sesión / sesión inválida
+- 404  documento inexistente O de otro usuario (no se distingue, por seguridad)
+- 409  conflicto de estado (documento aún no procesado / en procesamiento)
+- 422  cuerpo o parámetros inválidos (validación)
+
+ESTADO DE UN DOCUMENTO (polling)
+--------------------------------
+pending → processing → completed | error
+
+- Se consulta con GET /documents/{id}/status, o con el campo "status" de
+  la lista/detalle.
+- "error" trae un mensaje en español en el campo "error".
+- Texto vacío (escaneo ilegible) NO es error: termina "completed" con texto "".
+
+=========================================================================
+ AUTENTICACIÓN  (/auth)
+=========================================================================
+
+POST /auth/login
+  Body JSON:  {"email": "...", "password": "..."}
+  200 → {"user": {"id": 1, "name": "...", "email": "..."}}  + cookie access_token
+  401 → credenciales incorrectas
+
+POST /auth/register
+  Body JSON:  {"name": "...", "email": "...", "password": "..."}
+              (contraseña mínimo 8 caracteres)
+  201 → {"user": {"id", "name", "email"}}  + cookie access_token
+  409 → el correo ya está registrado
+  422 → nombre vacío / correo inválido / contraseña corta
+
+GET /auth/me
+  200 → {"user": {"id", "name", "email"}}   (leído de la cookie)
+  401 → sin sesión (el front lo trata como "no logueado")
+
+POST /auth/logout
+  204 sin cuerpo; borra la cookie
+
+POST /auth/forgot-password
+  Body JSON:  {"email": "..."}
+  202 → {"detail": "Si el correo está asociado a una cuenta, recibirás instrucciones."}
+        (respuesta genérica a propósito: no revela si la cuenta existe)
+  Nota: todavía no hay flujo real de correo/reset (pendiente del equipo).
+
+POST /auth/refresh          (solo para clientes que no usan cookies)
+  Body JSON:  {"refresh_token": "..."}
+  200 → {"access_token": "...", "token_type": "bearer"}
+  401 → refresh inválido o expirado
+
+=========================================================================
+ DOCUMENTOS  (/documents)
+=========================================================================
+
+POST /documents                          (subir)
+  multipart/form-data, campo "file"  → PDF, PNG, JPG o JPEG; máximo 20 MB
+  201 → {"id": 7, "status": "pending"}
+        (responde al instante; el OCR corre en segundo plano)
+  400 → formato no soportado: "Formato de archivo no soportado: .docx."
+        o archivo vacío: "El archivo está vacío."
+  413 → "El archivo excede el límite de 20 MB."
+  Nota: el límite de 100 páginas del PDF se valida AL PROCESAR: sube bien,
+        pero el documento termina en "error" con ese mensaje.
+
+GET /documents                           (listar)
+  200 → [
+          {"id": 7, "name": "informe.pdf", "size_bytes": 12345,
+           "status": "completed", "error": ""},
+          ...
+        ]
+  Usuario normal: solo sus documentos. Admin: los de todos.
+
+GET /documents/{id}                      (detalle)
+  200 → {"id", "name", "size_bytes", "status", "error"}
+  404 → no existe o es de otro usuario
+
+GET /documents/{id}/status               (polling del procesamiento)
+  200 → {"id": 7, "status": "processing", "error": ""}
+        status ∈ pending | processing | completed | error
+  404
+
+GET /documents/{id}/text                 (ver el texto)
+  200 → TEXTO PLANO (Content-Type: text/plain; NO es JSON)
+        Es el texto extraído por OCR o el corregido por el usuario.
+        Puede ser "" (válido) si el documento no tenía texto.
+  409 → "El texto todavía no está disponible." (aún no está completed)
+  404
+
+PATCH /documents/{id}                    (renombrar)
+  Body JSON:  {"name": "nuevo nombre.pdf"}   (1 a 255 caracteres)
+  200 → {"id", "name", "size_bytes", "status", "error"}
+  422 → nombre vacío o demasiado largo
+  404
+
+PUT   /documents/{id}/text               (guardar texto editado)
+PATCH /documents/{id}/text               (MISMO endpoint, alias)
+  Body JSON:  {"text": "texto corregido..."}
+  204 sin cuerpo
+  Usar PATCH en la vista de detalle (autoguardado); PUT es el que ya usa
+  el frontend actual. Ambos hacen exactamente lo mismo.
+  409 → "Solo se puede editar el texto de un documento completado."
+  404
+
+DELETE /documents/{id}                   (eliminar)
+  204 sin cuerpo; borra el registro y el archivo del texto procesado
+  409 → "El documento está en procesamiento; no se puede eliminar."
+  404
+
+POST /documents/{id}/reprocess           (reprocesar desde el texto actual)
+  202 → {"id", "name", "size_bytes", "status", "error"}
+        Pasa el documento por "processing" y lo devuelve a "completed".
+        Hacerlo tras editar el texto con PATCH /text.
+  409 → "Solo se puede reprocesar un documento completado."
+        o "El documento no tiene texto para reprocesar."
+  404
+
+=========================================================================
+ RESUMENES (NO DISPONIBLES EN ESTA RAMA)
+=========================================================================
+Los endpoints de resumen viven en la rama feat/Summarization (aún no
+mergeada en develop):
+  POST /documents/{id}/summary   → 201, genera el resumen
+  GET  /documents/{id}/summary   → 200, texto plano del resumen vigente
+No los consuma el frontend hasta que el equipo los integre en develop.
+
+=========================================================================
+ RESUMEN RÁPIDO DE RUTAS
+=========================================================================
+  GET    /health
+  POST   /auth/login
+  POST   /auth/register
+  GET    /auth/me
+  POST   /auth/logout
+  POST   /auth/forgot-password
+  POST   /auth/refresh
+  POST   /documents
+  GET    /documents
+  GET    /documents/{id}
+  GET    /documents/{id}/status
+  GET    /documents/{id}/text
+  PATCH  /documents/{id}
+  PUT    /documents/{id}/text
+  PATCH  /documents/{id}/text
+  DELETE /documents/{id}
+  POST   /documents/{id}/reprocess
+
+  GET /health → 200 {"status": "ok", "message": "Servicio en funcionamiento."}
+  (smoke test, sin autenticación)
