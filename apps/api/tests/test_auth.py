@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from src.adapters.http.dependencies import current_user
 from src.adapters.security.bcrypt_adapter import BcryptPasswordHasher
 from src.adapters.security.jwt_adapter import JwtTokenService
+from src.application.usecases.auth import issue_session
 from src.domain.user import AuthContext, Role, User, new_user
 from src.main import app
 
@@ -85,9 +86,9 @@ def test_refresh_returns_new_access_token(client: TestClient) -> None:
     _add_user(client, "alice@correo.com", "correct-password")
     user = app.state.repository.get_user_by_email("alice@correo.com")
     assert user is not None
-    refresh_token = app.state.token_service.create_refresh_token(user)
+    pair = issue_session(user, app.state.refresh_repository, app.state.token_service)
 
-    response = client.post("/auth/refresh", json={"refresh_token": refresh_token})
+    response = client.post("/auth/refresh", json={"refresh_token": pair.refresh})
 
     assert response.status_code == 200
     context = app.state.token_service.decode_access_token(
@@ -267,7 +268,7 @@ def test_current_user_rejects_refresh_token_as_access() -> None:
     user: User = new_user("alice", "hash", role="user")
     tokens = _tokens()
     probe = _probe_app(tokens)
-    refresh = tokens.create_refresh_token(user)
+    refresh = tokens.create_refresh_token(user, "jti-1", "fam-1")
 
     with TestClient(probe) as test_client:
         response = test_client.get(
