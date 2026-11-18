@@ -1,5 +1,6 @@
 import { FileText, FolderOpen, LogOut, Users, X } from "lucide-react";
 import type { ActiveNavSection, User } from "../../types/summary";
+import { FloatingOcty } from "../ui/FloatingOcty";
 import { OctyMascot } from "../ui/OctyMascot";
 
 interface SidebarProps {
@@ -37,8 +38,8 @@ export function Sidebar({
   ];
 
   const sidebarContent = (
-    <div className="flex  h-full flex-col justify-between fixed bg-white border-r border-brand-card">
-      <div className="p-6 space-y-8 overflow-y-auto ">
+    <div className="flex h-full flex-col justify-between bg-white border-r border-brand-card fixed">
+      <div className="p-6 space-y-8 overflow-y-auto">
         <div className="flex items-center justify-between">
           <button
             type="button"
@@ -111,10 +112,12 @@ export function Sidebar({
       </div>
 
       <div className="shrink-0">
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-3 m-2">
           <div className="rounded-2xl bg-brand-light border border-brand-card p-3 flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card shadow-sm">
-              <OctyMascot pose="neutral" size={38} />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card shadow-sm overflow-hidden">
+              <FloatingOcty variant="sidebar">
+                <OctyMascot pose="neutral" size={36} />
+              </FloatingOcty>
             </div>
             <div className="min-w-0">
               <p className="font-display text-[13px] font-bold text-brand-dark leading-tight">
