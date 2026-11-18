@@ -50,7 +50,7 @@ export default function LoginPage() {
           <h2>Inicia sesión</h2>
           <p>Accede a tus documentos y continúa donde lo dejaste.</p>
         </div>
-        <div className="shrink-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-light border border-brand-card shadow-sm">
+        <div className="shrink-0 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-light dark:bg-night-surface border border-brand-card dark:border-night-border shadow-sm">
           <FloatingOcty variant="hero" title="Octy te da la bienvenida">
             <OctyMascot pose="waving" size={44} />
           </FloatingOcty>

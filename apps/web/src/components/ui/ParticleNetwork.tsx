@@ -12,8 +12,8 @@ const MAX_PARTICLES = 50;
 const MIN_PARTICLES = 24;
 const MAX_DISTANCE = 145;
 const MAX_DISTANCE_SQ = MAX_DISTANCE * MAX_DISTANCE;
-const MIN_SPEED = 10; // px/s
-const MAX_SPEED = 20; // px/s
+const MIN_SPEED = 10;
+const MAX_SPEED = 20;
 
 function createParticle(width: number, height: number): Particle {
   const speed = MIN_SPEED + Math.random() * (MAX_SPEED - MIN_SPEED);
@@ -50,6 +50,7 @@ export function ParticleNetwork({ className = "" }: ParticleNetworkProps) {
     let particles: Particle[] = [];
     let rafId: number | null = null;
     let lastTime = performance.now();
+    let isDarkMode = document.documentElement.classList.contains("dark");
 
     const syncCanvasSize = () => {
       const rect = container.getBoundingClientRect();
@@ -85,7 +86,10 @@ export function ParticleNetwork({ className = "" }: ParticleNetworkProps) {
     const drawFrame = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Líneas de conexión (1px, azul #3E8FD6 con mayor visibilidad)
+      const rgb = isDarkMode ? "127, 196, 242" : "62, 143, 214";
+      const lineMaxAlpha = isDarkMode ? 0.36 : 0.46;
+      const nodeAlpha = isDarkMode ? 0.52 : 0.55;
+
       ctx.lineWidth = 1;
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i];
@@ -97,8 +101,8 @@ export function ParticleNetwork({ className = "" }: ParticleNetworkProps) {
 
           if (distSq < MAX_DISTANCE_SQ) {
             const dist = Math.sqrt(distSq);
-            const alpha = (1 - dist / MAX_DISTANCE) * 0.46;
-            ctx.strokeStyle = `rgba(62, 143, 214, ${alpha.toFixed(3)})`;
+            const alpha = (1 - dist / MAX_DISTANCE) * lineMaxAlpha;
+            ctx.strokeStyle = `rgba(${rgb}, ${alpha.toFixed(3)})`;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -107,8 +111,7 @@ export function ParticleNetwork({ className = "" }: ParticleNetworkProps) {
         }
       }
 
-      // Nodos / partículas con mayor contraste sobre #EAF6FF
-      ctx.fillStyle = "rgba(62, 143, 214, 0.55)";
+      ctx.fillStyle = `rgba(${rgb}, ${nodeAlpha})`;
       for (const p of particles) {
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -181,6 +184,15 @@ export function ParticleNetwork({ className = "" }: ParticleNetworkProps) {
     });
     resizeObserver.observe(container);
 
+    const themeObserver = new MutationObserver(() => {
+      isDarkMode = document.documentElement.classList.contains("dark");
+      drawFrame();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         stopLoop();
@@ -199,6 +211,7 @@ export function ParticleNetwork({ className = "" }: ParticleNetworkProps) {
     return () => {
       stopLoop();
       resizeObserver.disconnect();
+      themeObserver.disconnect();
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       motionQuery.removeEventListener("change", handleMotionChange);
     };
