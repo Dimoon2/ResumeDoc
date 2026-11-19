@@ -212,16 +212,16 @@ export function DashboardWorkspace() {
             <section aria-label="Mis Resúmenes" className="space-y-5 sm:space-y-6">
               <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
                 <div>
-                  <h1 className="font-display text-[22px] sm:text-[28px] font-semibold leading-[30px] sm:leading-[36px] tracking-[-0.015em] text-brand-dark">
+                  <h1 className="font-display text-[22px] sm:text-[28px] font-semibold leading-[30px] sm:leading-[36px] tracking-[-0.015em] text-brand-dark dark:text-night-text">
                     Mis Resúmenes
                   </h1>
-                  <p className="mt-1 text-[14px] text-brand-dark/75">
+                  <p className="mt-1 text-[14px] text-brand-dark/75 dark:text-night-text/70">
                     Resúmenes generados e importados, listos para revisión, consulta del original y exportación.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5 sm:gap-3">
-                  <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card overflow-x-auto max-w-full shadow-sm">
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border overflow-x-auto max-w-full shadow-sm">
                     {(["ALL", "PDF", "PNG", "JPG"] as const).map((fmt) => {
                       const active = formatFilter === fmt;
                       return (
@@ -232,7 +232,7 @@ export function DashboardWorkspace() {
                           className={`h-8 px-3 rounded-lg text-[12px] font-semibold transition-all duration-150 active:scale-[0.97] whitespace-nowrap shrink-0 ${
                             active
                               ? "bg-brand-primary text-white shadow-sm"
-                              : "text-brand-dark hover:bg-brand-light"
+                              : "text-brand-dark dark:text-night-text hover:bg-brand-light dark:hover:bg-night-elevated"
                           }`}
                         >
                           {fmt === "ALL" ? "Todos" : fmt}
@@ -241,7 +241,7 @@ export function DashboardWorkspace() {
                     })}
                   </div>
 
-                  <div className="flex items-center gap-1 p-1 rounded-xl bg-white border border-brand-card shrink-0 shadow-sm">
+                  <div className="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border shrink-0 shadow-sm">
                     <button
                       type="button"
                       onClick={() => setCardLayout("grid")}
@@ -249,7 +249,7 @@ export function DashboardWorkspace() {
                       className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
                         cardLayout === "grid"
                           ? "bg-brand-primary text-white shadow-sm"
-                          : "text-brand-dark hover:bg-brand-light"
+                          : "text-brand-dark dark:text-night-text hover:bg-brand-light dark:hover:bg-night-elevated"
                       }`}
                     >
                       <LayoutGrid className="h-4 w-4" />
@@ -261,7 +261,7 @@ export function DashboardWorkspace() {
                       className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all duration-150 active:scale-95 ${
                         cardLayout === "list"
                           ? "bg-brand-primary text-white shadow-sm"
-                          : "text-brand-dark hover:bg-brand-light"
+                          : "text-brand-dark dark:text-night-text hover:bg-brand-light dark:hover:bg-night-elevated"
                       }`}
                     >
                       <List className="h-4 w-4" />
@@ -271,14 +271,14 @@ export function DashboardWorkspace() {
               </div>
 
               {myDocuments.length === 0 ? (
-                <div className="animate-fade-up rounded-2xl bg-white border border-brand-card p-8 sm:p-12 text-center space-y-3 shadow-sm">
-                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light text-brand-primary">
+                <div className="animate-fade-up rounded-2xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border p-8 sm:p-12 text-center space-y-3 shadow-sm">
+                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light dark:bg-night-elevated text-brand-primary dark:text-brand-accent">
                     <FileText className="h-5 w-5" />
                   </div>
-                  <h2 className="font-display text-[16px] font-semibold text-brand-dark">
+                  <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
                     No se encontraron resúmenes
                   </h2>
-                  <p className="text-[14px] text-brand-dark/70 max-w-md mx-auto">
+                  <p className="text-[14px] text-brand-dark/70 dark:text-night-text/65 max-w-md mx-auto">
                     {normalizedQuery || formatFilter !== "ALL"
                       ? "Ajusta tu búsqueda o cambia el filtro de formato para ver tus documentos."
                       : "Arrastra un archivo PDF o imagen (PNG, JPG, JPEG) o importa un resumen exportado para comenzar."}
@@ -290,7 +290,7 @@ export function DashboardWorkspace() {
                         setSearchQuery("");
                         setFormatFilter("ALL");
                       }}
-                      className="inline-flex h-10 items-center rounded-xl bg-brand-light border border-brand-card px-4 text-[13px] font-semibold text-brand-dark hover:border-brand-accent hover:text-brand-primary transition-all duration-150 active:scale-[0.98]"
+                      className="inline-flex h-10 items-center rounded-xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border px-4 text-[13px] font-semibold text-brand-dark dark:text-night-text hover:border-brand-accent dark:hover:border-brand-accent hover:text-brand-primary dark:hover:text-brand-accent transition-all duration-150 active:scale-[0.98]"
                     >
                       Limpiar filtros
                     </button>

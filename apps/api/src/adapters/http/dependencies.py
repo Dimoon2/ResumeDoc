@@ -10,6 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from src.application.ports.document_repository import DocumentRepository
 from src.application.ports.document_state_store import DocumentStateStore
 from src.application.ports.file_storage import FileStorage
+from src.application.ports.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.security import PasswordHasher, TokenService
 from src.application.ports.task_queue import TaskQueue
 from src.domain.user import AuthContext
@@ -19,6 +20,8 @@ _UNAUTHORIZED_DETAIL = "Token de autenticación ausente o inválido."
 # Cookie de sesión HttpOnly: el frontend usa `credentials: "include"` y
 # `GET /auth/me`; no lee el token (cookies HttpOnly).
 SESSION_COOKIE = "access_token"
+# Cookie del refresh token, acotada a `/auth` para no enviarse a `/documents`.
+REFRESH_COOKIE = "refresh_token"
 
 
 def _session_token(request: Request, credentials: HTTPAuthorizationCredentials | None) -> str | None:
@@ -41,6 +44,11 @@ def get_password_hasher(request: Request) -> PasswordHasher:
 def get_token_service(request: Request) -> TokenService:
     """Token service port wired at startup."""
     return request.app.state.token_service
+
+
+def get_refresh_repository(request: Request) -> RefreshTokenRepository:
+    """Refresh-token repository port wired at startup."""
+    return request.app.state.refresh_repository
 
 
 def get_storage(request: Request) -> FileStorage:

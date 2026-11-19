@@ -1,5 +1,6 @@
 import { FileText, FolderOpen, LogOut, Users, X } from "lucide-react";
 import type { ActiveNavSection, User } from "../../types/summary";
+import { FloatingOcty } from "../ui/FloatingOcty";
 import { OctyMascot } from "../ui/OctyMascot";
 
 interface SidebarProps {
@@ -37,7 +38,7 @@ export function Sidebar({
   ];
 
   const sidebarContent = (
-    <div className="flex h-full flex-col justify-between bg-white border-r border-brand-card">
+    <div className="flex h-full flex-col justify-between bg-white dark:bg-night-surface border-r border-brand-card dark:border-night-border transition-colors duration-150 fixed">
       <div className="p-6 space-y-8 overflow-y-auto">
         <div className="flex items-center justify-between">
           <button
@@ -51,8 +52,8 @@ export function Sidebar({
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary text-white shadow-sm shadow-brand-primary/30 transition-transform duration-200 group-hover:scale-105 shrink-0">
               <FileText className="h-5 w-5" />
             </div>
-            <span className="font-display text-[19px] font-extrabold tracking-[-0.03em] text-brand-dark whitespace-nowrap">
-              Resume<span className="text-brand-primary">Doc</span>
+            <span className="font-display text-[19px] font-extrabold tracking-[-0.03em] text-brand-dark dark:text-night-text whitespace-nowrap">
+              Resume<span className="text-brand-primary dark:text-brand-accent">Doc</span>
             </span>
           </button>
 
@@ -60,14 +61,14 @@ export function Sidebar({
             type="button"
             onClick={onCloseMobile}
             aria-label="Cerrar menú lateral"
-            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-brand-dark hover:bg-brand-light transition-colors active:scale-95"
+            className="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg text-brand-dark dark:text-night-text hover:bg-brand-light dark:hover:bg-night-elevated transition-colors active:scale-95"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <nav aria-label="Navegación principal" className="space-y-1.5">
-          <p className="px-3 pb-1 text-[11px] font-semibold tracking-[0.04em] text-brand-dark/60 uppercase">
+          <p className="px-3 pb-1 text-[11px] font-semibold tracking-[0.04em] text-brand-dark/60 dark:text-night-text/55 uppercase">
             Espacio de trabajo
           </p>
           {navItems.map((item) => {
@@ -84,7 +85,7 @@ export function Sidebar({
                 className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-[14px] font-semibold transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent ${
                   isActive
                     ? "bg-brand-primary text-white shadow-sm shadow-brand-primary/25"
-                    : "text-brand-dark hover:bg-brand-light hover:text-brand-primary"
+                    : "text-brand-dark dark:text-night-text hover:bg-brand-light dark:hover:bg-night-elevated hover:text-brand-primary dark:hover:text-brand-accent"
                 }`}
               >
                 <span className="flex items-center gap-3 whitespace-nowrap shrink-0">
@@ -99,7 +100,7 @@ export function Sidebar({
                   className={`rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums transition-colors ${
                     isActive
                       ? "bg-white/20 text-white"
-                      : "bg-brand-light text-brand-dark/75 group-hover:bg-brand-card/60"
+                      : "bg-brand-light dark:bg-night-inset text-brand-dark/75 dark:text-night-text/75 group-hover:bg-brand-card/60 dark:group-hover:bg-night-elevated"
                   }`}
                 >
                   {item.count}
@@ -111,33 +112,35 @@ export function Sidebar({
       </div>
 
       <div className="shrink-0">
-        <div className="px-4 pb-3">
-          <div className="rounded-2xl bg-brand-light border border-brand-card p-3 flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white border border-brand-card shadow-sm">
-              <OctyMascot pose="neutral" size={38} />
+        <div className="px-4 pb-3 mx-1">
+          <div className="rounded-2xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border p-3 flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border shadow-sm overflow-hidden">
+              <FloatingOcty variant="sidebar">
+                <OctyMascot pose="neutral" size={36} />
+              </FloatingOcty>
             </div>
             <div className="min-w-0">
-              <p className="font-display text-[13px] font-bold text-brand-dark leading-tight">
+              <p className="font-display text-[13px] font-bold text-brand-dark dark:text-night-text leading-tight">
                 Octy
               </p>
-              <p className="text-[11px] leading-[15px] text-brand-dark/70 mt-0.5">
+              <p className="text-[11px] leading-[15px] text-brand-dark/70 dark:text-night-text/65 mt-0.5">
                 Asistente de resúmenes
               </p>
             </div>
           </div>
         </div>
 
-        <div className="p-4 border-t border-brand-card bg-brand-light/70">
-          <div className="rounded-xl bg-white border border-brand-card/80 p-2.5 flex items-center justify-between gap-2 shadow-sm">
+        <div className="p-4 border-t border-brand-card dark:border-night-border bg-brand-light/70 dark:bg-night-inset transition-colors duration-150">
+          <div className="rounded-xl bg-white dark:bg-night-surface border border-brand-card/80 dark:border-night-border p-2.5 flex items-center justify-between gap-2 shadow-sm">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-card text-[12px] font-bold text-brand-dark">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-card dark:bg-night-elevated text-[12px] font-bold text-brand-dark dark:text-night-text">
                 {currentUser.initials}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-[13px] font-semibold text-brand-dark">
+                <p className="truncate text-[13px] font-semibold text-brand-dark dark:text-night-text">
                   {currentUser.name}
                 </p>
-                <p className="truncate text-[11px] text-brand-dark/65">
+                <p className="truncate text-[11px] text-brand-dark/65 dark:text-night-text/60">
                   {currentUser.email || currentUser.role}
                 </p>
               </div>
@@ -148,7 +151,7 @@ export function Sidebar({
               onClick={onLogout}
               aria-label="Cerrar sesión"
               title="Cerrar sesión"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 hover:bg-brand-light hover:text-brand-primary transition-all duration-150 active:scale-95"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 dark:text-night-text/70 hover:bg-brand-light dark:hover:bg-night-elevated hover:text-brand-primary dark:hover:text-brand-accent transition-all duration-150 active:scale-95"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -167,7 +170,7 @@ export function Sidebar({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="animate-backdrop-in fixed inset-0 bg-brand-dark/25 backdrop-blur-[2px]"
+            className="animate-backdrop-in fixed inset-0 bg-brand-dark/25 dark:bg-black/60 backdrop-blur-[2px]"
             onClick={onCloseMobile}
             aria-hidden="true"
           />

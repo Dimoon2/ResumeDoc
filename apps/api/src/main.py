@@ -16,8 +16,14 @@ from pydantic import ValidationError
 from src.adapters.http.auth import router as auth_router
 from src.adapters.http.documents import router as documents_router
 from src.adapters.http.router import router as http_router
-from src.adapters.persistence.memory import InMemoryDocumentRepository
+from src.adapters.persistence.memory import (
+    InMemoryDocumentRepository,
+    InMemoryRefreshTokenRepository,
+)
 from src.adapters.persistence.redis_state import RedisDocumentStateStore
+from src.adapters.persistence.sqlmodel_refresh_repo import (
+    SQLModelRefreshTokenRepository,
+)
 from src.adapters.persistence.sqlmodel_repo import SQLModelDocumentRepository
 from src.adapters.security.bcrypt_adapter import BcryptPasswordHasher
 from src.adapters.security.jwt_adapter import JwtTokenService
@@ -44,8 +50,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # real usa el adaptador SQLModel de la rama data-base.
     if settings.database_url == "memory://":
         app.state.repository = InMemoryDocumentRepository()
+        app.state.refresh_repository = InMemoryRefreshTokenRepository()
     else:
         app.state.repository = SQLModelDocumentRepository(settings.database_url)
+        app.state.refresh_repository = SQLModelRefreshTokenRepository(
+            settings.database_url
+        )
     app.state.password_hasher = BcryptPasswordHasher()
     app.state.storage = FilesystemStorage(Path(settings.storage_dir))
     app.state.task_queue = CeleryTaskQueue(create_celery_app(settings.redis_url))
