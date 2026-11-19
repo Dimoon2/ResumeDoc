@@ -113,3 +113,12 @@ class SQLModelDocumentRepository:
             session.commit()
             session.refresh(orm_doc)
             return _to_domain_document(orm_doc)
+
+    def update_location(self, document_id: int, location: str) -> None:
+        with Session(self._engine) as session:
+            orm_doc = session.get(Documento, document_id)
+            if orm_doc is None:
+                return
+            orm_doc.ubicacion = location
+            session.add(orm_doc)
+            session.commit()

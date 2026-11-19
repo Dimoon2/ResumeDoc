@@ -52,3 +52,9 @@ class DocumentRepository(Protocol):
     def rename_document(self, document_id: int, name: str) -> Document | None:
         """Change the display name of a document; None if it doesn't exist."""
         ...
+
+    def update_location(self, document_id: int, location: str) -> None:
+        """Point `ubicacion` at the processed text once the pipeline
+        completes (team decision): the DB reference always names the
+        current content file, not the original binary."""
+        ...

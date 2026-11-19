@@ -36,6 +36,7 @@ venv/
 # Storage de binarios subidos por usuarios
 apps/api/storage/*
 !apps/api/storage/.gitignore
+/storage/
 
 # Docker
 apps/api/docker-compose.yml

@@ -4,7 +4,7 @@ Por defecto usan la infraestructura del `.env` (DATABASE_URL/REDIS_URL).
 Para apuntar a otra (p. ej. una BD de pruebas), sobreescríbela:
 
     INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
-    INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest tests/test_integration_db.py
+    INTEGRATION_REDIS_URL=redis://localhost:6379/0 .venv/bin/pytest tests/test_integration_db.py
 """
 
 import os

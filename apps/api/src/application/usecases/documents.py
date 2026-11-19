@@ -70,11 +70,12 @@ def process_document(
     ocr: OcrEngine,
     document_id: int,
 ) -> None:
-    """Extract the text of a document and store it in the temp folder (T-14).
-
-    Status transitions live in the state store (D-24); the text is NOT
-    persisted to the DB — saving is an explicit user action (D-25). Empty
-    text completes normally (D-09).
+    """Extract the text of a document and store it in the storage folder
+    (T-14) — automatically, no user action needed: the flow is upload →
+    OCR → save → view. On completion the DB reference `ubicacion` is
+    repointed at the processed text and the original binary is deleted
+    (team decision: the text is the only content kept). State transitions
+    live in the state store (D-24). Empty text completes normally (D-09).
     """
     document = repository.get_document(document_id)
     if document is None:
@@ -91,6 +92,8 @@ def process_document(
         else:
             text = ocr.recognize(data)
         text_path = storage.save_text(text)
+        repository.update_location(document_id, text_path)
+        storage.delete(document.location)  # el binario ya no se necesita
     except DocumentProcessingError as exc:
         states.set(document_id, fail(processing, str(exc)))
         return
@@ -99,3 +102,25 @@ def process_document(
         states.set(document_id, fail(processing, "Error al procesar el documento."))
         return
     states.set(document_id, complete(processing, text_path))
+
+
+def reprocess_document(
+    storage: FileStorage,
+    states: DocumentStateStore,
+    document_id: int,
+) -> None:
+    """Regenerate the derived artifacts from the edited text: the document
+    goes through `processing` like the normal pipeline so the UI can poll,
+    then back to `completed`. No OCR re-run: the edited text is the source
+    of truth (the original binary is purged at processing time)."""
+    state = states.get(document_id)
+    if state is None or state.status != "completed":
+        raise ValueError("Solo se puede reprocesar un documento completado.")
+    text = storage.read_text(state.text_path) if state.text_path else ""
+    if not text.strip():
+        raise ValueError("El documento no tiene texto para reprocesar.")
+
+    states.set(document_id, DocumentState("processing"))
+    # shortcut: los artefactos derivados (T-24, T-27…T-29) se regeneran en
+    # este punto cuando sus módulos estén disponibles.
+    states.set(document_id, DocumentState("completed", text_path=state.text_path))
