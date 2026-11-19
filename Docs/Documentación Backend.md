@@ -14,7 +14,7 @@ API de ResumeDoc: subida de PDFs e imágenes, extracción de texto (pypdf + OCR 
 | 3 — Pipeline | T-11…T-17 | Máquina de estados en Redis (`pending → processing → completed/error`), worker Celery con `soft_time_limit` (5 min) y hook de huérfanos al arrancar, PDF: capa textual pypdf + OCR por página sin texto, PDF cifrado → error, > 100 páginas → error, `GET /documents/{id}/status` (polling, 404 uniforme) |
 | 4 — Integración | T-18, T-19 | Adaptadores SQLModel reales sobre el paquete `db/` (documentos y `token_refresco`, con `claim` atómico y revocación por familia), migraciones Alembic aplicadas, pruebas de integración auto-skipped sin infra |
 
-Suite: **118 passed · pyright 0 errores**. Quedan 3 fallos de entorno si no está instalado el binario `tesseract` (pruebas de OCR real) y 10 skips: las pruebas de integración solo corren con infra real (no `memory://`).
+Suite (tests movidos a `tests/` en la raíz): **134 passed · pyright 0 errores**. Quedan 3 fallos de entorno si no está instalado el binario `tesseract` (pruebas de OCR real) y 10 skips: las pruebas de integración solo corren con infra real (no `memory://`).
 
 ## Puesta en marcha
 
@@ -93,10 +93,12 @@ ADMIN_EMAIL=root@correo.com ADMIN_PASSWORD=<una-clave-fuerte> \
 
 ### 7. Pruebas
 
+Los tests viven en `tests/` en la **raíz del repo** (`pytest.ini` en la raíz,
+`pythonpath = apps/api`):
+
 ```bash
-cd apps/api
-../../.venv/bin/python -m pytest            # suite completa
-npx pyright                                 # tipos: 0 errores (usa ../../.venv)
+.venv/bin/pytest                            # suite completa (desde la raíz)
+.venv/bin/pyright -p apps/api               # tipos: 0 errores (usa .venv raíz)
 ```
 
 Las pruebas de integración (worker y repo de refresh) usan por defecto la infra del `.env` (`DATABASE_URL`/`REDIS_URL`) y se limpian solas al terminar. Para apuntarlas a otra infraestructura (recomendado: una BD de pruebas, no la compartida), defíne `INTEGRATION_DATABASE_URL` e `INTEGRATION_REDIS_URL`. Receta con una BD `resumedoc_test` en el contenedor local:
@@ -105,9 +107,8 @@ Las pruebas de integración (worker y repo de refresh) usan por defecto la infra
 docker exec resumedoc_db psql -U resumedoc -d postgres -c "CREATE DATABASE resumedoc_test;"
 DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
   .venv/bin/python -m alembic upgrade head
-cd apps/api
 INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumedoc_test \
-  INTEGRATION_REDIS_URL=redis://localhost:6379/0 ../../.venv/bin/pytest tests/test_integration_db.py
+  INTEGRATION_REDIS_URL=redis://localhost:6379/0 .venv/bin/pytest tests/test_integration_db.py
 ```
 
 ## Variables de entorno
