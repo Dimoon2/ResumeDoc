@@ -4,7 +4,7 @@ Backend de ResumeDoc: subida de PDFs/imágenes, extracción de texto por
 pipeline (pypdf + OCR Tesseract), autenticación y resúmenes. FastAPI con
 arquitectura hexagonal, cola Celery/Redis y PostgreSQL (rama `data-base`).
 
-## Estado: qué está hecho (Fases 0–4)
+## Estado: qué está hecho (Fases 0–5)
 
 | Fase | Tareas | Qué entrega |
 |---|---|---|
@@ -13,9 +13,7 @@ arquitectura hexagonal, cola Celery/Redis y PostgreSQL (rama `data-base`).
 | 2 — Subida | T-06…T-10 | `POST /documents` (validación extensión/vacío/20 MB → 201 `{id, status:"pending"}`), guardado `{uuid}.{ext}`, puerto `DocumentRepository` + doble en memoria, encolado por Celery con **compensación si el broker falla** (sin huérfanos en BD ni disco) |
 | 3 — Pipeline | T-11…T-17 | Máquina de estados en Redis (`pending → processing → completed/error`), worker Celery con `soft_time_limit` (5 min) y hook de huérfanos al arrancar, PDF: capa textual pypdf + OCR por página sin texto, PDF cifrado → error, > 100 páginas → error, `GET /documents/{id}/status` (polling, 404 uniforme) |
 | 4 — Integración | T-18, T-19 | Adaptador SQLModel real sobre el paquete `db/` del equipo de datos (fusionado de `data-base`, migraciones Alembic activas), pruebas de integración auto-skipped sin infra |
-
-Suite: **73 passed, 3 skipped · pyright 0 errores** (los 3 skips son las
-pruebas de integración, que solo corren con infra real).
+| 5 — Resúmenes | — | Generación con Ollama local o Cloud, para documentos procesados y texto pegado; resumen ejecutivo, puntos clave, acciones y temas |
 
 ## Cómo levantar el backend
 
@@ -111,12 +109,30 @@ INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumed
 INTEGRATION_REDIS_URL=redis://localhost:6379/0 venv/bin/pytest tests/test_integration_db.py
 ```
 
+## Ollama para resúmenes
+
+La API usa Ollama local (`http://localhost:11434`) y el modelo `llama3.2` si
+no se cambian las variables. Instala Ollama, descarga el modelo con
+`ollama pull llama3.2` y mantén el servicio activo. Si el backend corre en un
+contenedor, configura `OLLAMA_BASE_URL` con la dirección del servicio de
+Ollama vista desde ese contenedor.
+
+También se puede usar Ollama Cloud: define `OLLAMA_BASE_URL=https://ollama.com/v1`
+y `OLLAMA_API_KEY`. El modo de API se detecta automáticamente cuando la URL
+termina en `/v1`; `OLLAMA_API_STYLE` permite forzar `native` u `openai`.
+`OLLAMA_MODEL` selecciona el modelo y `OLLAMA_TIMEOUT_S` controla el tiempo
+máximo de cada llamada. La plantilla completa está en `.env.example`.
+
+Para usar el flujo real desde el frontend, configura
+`VITE_USE_MOCK_AUTH=false` en `apps/web/.env` y reinicia Vite. Así se usan
+autenticación y resúmenes del backend. En modo mock la interfaz conserva su
+resumen de demostración.
+
 ## Variables de entorno
 
-Todas obligatorias salvo las marcadas — véase `.env.example` con la
-plantilla completa (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`,
-`STORAGE_DIR`, límites de D-17, `OCR_LANG`, `CORS_ORIGINS`,
-`ADMIN_EMAIL`/`ADMIN_PASSWORD` opcionales).
+Las variables de infraestructura son obligatorias. OCR, bootstrap del admin
+y Ollama se detallan en `.env.example`; las variables de Ollama tienen
+valores por defecto para uso local.
 
 ## Contrato de autenticación (con el frontend)
 

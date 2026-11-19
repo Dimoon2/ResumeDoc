@@ -16,12 +16,14 @@ from pydantic import ValidationError
 from src.adapters.http.auth import router as auth_router
 from src.adapters.http.documents import router as documents_router
 from src.adapters.http.router import router as http_router
+from src.adapters.http.summaries import router as summaries_router
 from src.adapters.persistence.memory import InMemoryDocumentRepository
 from src.adapters.persistence.redis_state import RedisDocumentStateStore
 from src.adapters.persistence.sqlmodel_repo import SQLModelDocumentRepository
 from src.adapters.security.bcrypt_adapter import BcryptPasswordHasher
 from src.adapters.security.jwt_adapter import JwtTokenService
 from src.adapters.storage.filesystem import FilesystemStorage
+from src.adapters.summarization import OllamaSummarizer
 from src.adapters.workers.queue import CeleryTaskQueue, create_celery_app
 from src.application.usecases.auth import bootstrap_admin
 from src.core.config import get_settings
@@ -50,6 +52,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.storage = FilesystemStorage(Path(settings.storage_dir))
     app.state.task_queue = CeleryTaskQueue(create_celery_app(settings.redis_url))
     app.state.state_store = RedisDocumentStateStore(settings.redis_url)
+    app.state.summarizer = OllamaSummarizer(
+        model=settings.ollama_model,
+        base_url=settings.ollama_base_url,
+        api_key=settings.ollama_api_key,
+        api_style=settings.ollama_api_style,
+        timeout_s=settings.ollama_timeout_s,
+    )
     app.state.token_service = JwtTokenService(
         secret=settings.jwt_secret,
         access_ttl=settings.jwt_access_ttl,
@@ -88,6 +97,7 @@ def create_app() -> FastAPI:
     application.include_router(http_router)
     application.include_router(auth_router)
     application.include_router(documents_router)
+    application.include_router(summaries_router)
     return application
 
 

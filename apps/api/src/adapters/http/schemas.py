@@ -3,7 +3,7 @@
 import re
 from typing import Literal
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 # Frontend contract (feat/Landing-Page-and-Auth): AuthResponse {user}.
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -110,3 +110,47 @@ class RenameDocumentRequest(BaseModel):
 
 class UpdateTextRequest(BaseModel):
     text: str
+
+
+class SummarizeRequest(BaseModel):
+    depth: Literal["executive", "detailed", "bullets"] = "executive"
+
+
+class TextSummaryRequest(BaseModel):
+    """Request used to summarize pasted text without uploading a file."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    file_name: str = Field(alias="fileName", min_length=1, max_length=255)
+    text_content: str = Field(
+        alias="textContent", min_length=1, max_length=2_000_000
+    )
+    depth: Literal["executive", "detailed", "bullets"] = "executive"
+
+    @field_validator("file_name")
+    @classmethod
+    def valid_file_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("El nombre del documento es obligatorio.")
+        return value.strip()
+
+    @field_validator("text_content")
+    @classmethod
+    def valid_text_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("El contenido del documento es obligatorio.")
+        return value
+
+
+class SummaryResponse(BaseModel):
+    """Summary generated on demand from a completed document's extracted text."""
+
+    id: str
+    executive_summary: str
+    key_points: list[str]
+    action_items: list[dict[str, str]]
+    topics: list[str]
+    word_count_original: int
+    word_count_summary: int
+    reading_time_minutes: int
+    source_excerpt: str

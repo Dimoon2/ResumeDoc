@@ -9,20 +9,33 @@ from src.adapters.http.dependencies import (
     get_repository,
     get_state_store,
     get_storage,
+    get_summarizer,
     get_task_queue,
 )
 from src.adapters.http.schemas import (
     DocumentResponse,
     DocumentStatusResponse,
     RenameDocumentRequest,
+    SummaryResponse,
+    SummarizeRequest,
     UpdateTextRequest,
     UploadedDocumentResponse,
 )
 from src.application.ports.document_repository import DocumentRepository
 from src.application.ports.document_state_store import DocumentStateStore
 from src.application.ports.file_storage import FileStorage
+from src.application.ports.summarization import (
+    Summarizer,
+    SummarizerFailed,
+    SummarizerUnavailable,
+)
 from src.application.ports.task_queue import TaskQueue
 from src.application.usecases import documents as document_usecases
+from src.application.usecases.summaries import (
+    DocumentNotCompleted,
+    DocumentNotFound,
+    summarize_document,
+)
 from src.core.config import get_settings
 from src.domain.document import (
     Document,
@@ -200,6 +213,52 @@ def update_document_text(
             document_id,
             DocumentState("completed", text_path=storage.save_text(payload.text)),
         )
+
+
+@router.post("/{document_id}/summary", response_model=SummaryResponse)
+def summarize(
+    document_id: int,
+    payload: SummarizeRequest,
+    user: AuthContext = Depends(current_user),
+    repository: DocumentRepository = Depends(get_repository),
+    state_store: DocumentStateStore = Depends(get_state_store),
+    storage: FileStorage = Depends(get_storage),
+    summarizer: Summarizer = Depends(get_summarizer),
+) -> SummaryResponse:
+    """Generate a summary from the extracted text of a completed document."""
+    _accessible_document(repository.get_document(document_id), user)
+    try:
+        result = summarize_document(
+            repository=repository,
+            state_store=state_store,
+            storage=storage,
+            summarizer=summarizer,
+            document_id=document_id,
+            depth=payload.depth,
+        )
+    except DocumentNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except DocumentNotCompleted as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    except OSError as exc:
+        raise HTTPException(
+            status_code=409, detail="El texto extraído ya no está disponible."
+        ) from exc
+    except SummarizerUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except SummarizerFailed as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return SummaryResponse(
+        id=f"summary-{document_id}",
+        executive_summary=result.executive_summary,
+        key_points=result.key_points,
+        action_items=result.action_items,
+        topics=result.topics,
+        word_count_original=result.word_count_original,
+        word_count_summary=result.word_count_summary,
+        reading_time_minutes=result.reading_time_minutes,
+        source_excerpt=result.source_excerpt,
+    )
 
 
 @router.get("/{document_id}/status", response_model=DocumentStatusResponse)
