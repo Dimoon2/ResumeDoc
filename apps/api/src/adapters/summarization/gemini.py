@@ -1,14 +1,12 @@
-"""Ollama adapter supporting its local API and OpenAI-compatible API."""
+"""Gemini Developer API adapter using its OpenAI-compatible endpoint."""
 
 from __future__ import annotations
 
 import json
-import os
 import re
 from typing import TypedDict
 import urllib.error
 import urllib.request
-from urllib.parse import urlparse
 
 from src.application.ports.summarization import (
     SummarizerFailed,
@@ -17,8 +15,8 @@ from src.application.ports.summarization import (
     SynthesisDepth,
 )
 
-_DEFAULT_MODEL = "llama3.2"
-_DEFAULT_BASE_URL = "http://localhost:11434"
+_DEFAULT_MODEL = "gemini-flash-lite-latest"
+_DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
 _MAX_CHUNK_CHARS = 12_000
 _REDUCE_GROUP_SIZE = 6
 _SUMMARY_SCHEMA: dict[str, object] = {
@@ -54,13 +52,8 @@ class _StructuredSummary(TypedDict):
     topics: list[str]
 
 
-class OllamaSummarizer:
-    """Generate Spanish summaries with Ollama, locally or through Ollama Cloud.
-
-    `OLLAMA_BASE_URL` defaults to the local service. A URL ending in `/v1`
-    selects the OpenAI-compatible endpoint automatically; this also supports
-    Ollama Cloud when `OLLAMA_API_KEY` is configured.
-    """
+class GeminiSummarizer:
+    """Generate Spanish summaries through the Gemini Developer API."""
 
     def __init__(
         self,
@@ -68,59 +61,26 @@ class OllamaSummarizer:
         model: str | None = None,
         base_url: str | None = None,
         api_key: str | None = None,
-        api_style: str | None = None,
         timeout_s: float = 180.0,
     ) -> None:
-        self._model = model or os.environ.get("OLLAMA_MODEL", _DEFAULT_MODEL)
+        self._model = model or _DEFAULT_MODEL
         self._base_url = (
-            base_url or os.environ.get("OLLAMA_BASE_URL", _DEFAULT_BASE_URL)
+            base_url or _DEFAULT_BASE_URL
         ).rstrip("/")
-        self._api_key = api_key if api_key is not None else os.environ.get(
-            "OLLAMA_API_KEY", ""
-        )
-        self._api_style = api_style or os.environ.get("OLLAMA_API_STYLE", "auto")
+        self._api_key = api_key or ""
         self._timeout_s = timeout_s
 
-    def _resolved_api_style(self) -> str:
-        if self._api_style != "auto":
-            return self._api_style
-        parsed = urlparse(self._base_url)
-        if (
-            parsed.netloc.lower() == "ollama.com"
-            or parsed.path.rstrip("/").endswith("/v1")
-        ):
-            return "openai"
-        return "native"
-
     def _post(self, payload: dict[str, object]) -> dict[str, object]:
-        api_style = self._resolved_api_style()
-        if api_style == "openai":
-            endpoint_base = self._base_url
-            parsed = urlparse(endpoint_base)
-            if (
-                parsed.netloc.lower() == "ollama.com"
-                and not parsed.path.rstrip("/").endswith("/v1")
-            ):
-                endpoint_base = f"{endpoint_base}/v1"
-            endpoint = f"{endpoint_base}/chat/completions"
-        elif api_style == "native":
-            endpoint = f"{self._base_url}/api/chat"
-        else:
+        if not self._api_key:
             raise SummarizerUnavailable(
-                "OLLAMA_API_STYLE debe ser auto, native u openai."
+                "Gemini requiere configurar GEMINI_API_KEY."
             )
 
-        if (
-            urlparse(self._base_url).netloc.lower() == "ollama.com"
-            and not self._api_key
-        ):
-            raise SummarizerUnavailable(
-                "Ollama Cloud requiere configurar OLLAMA_API_KEY."
-            )
-
-        headers = {"Content-Type": "application/json"}
-        if self._api_key:
-            headers["Authorization"] = f"Bearer {self._api_key}"
+        endpoint = f"{self._base_url}/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._api_key}",
+        }
         request = urllib.request.Request(
             endpoint,
             data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
@@ -133,21 +93,38 @@ class OllamaSummarizer:
         except urllib.error.HTTPError as exc:
             if exc.code in (401, 403):
                 raise SummarizerUnavailable(
-                    "Ollama rechazó la autenticación. Revisa OLLAMA_API_KEY."
+                    "Gemini rechazó la autenticación. Revisa GEMINI_API_KEY."
+                ) from exc
+            if exc.code == 402:
+                raise SummarizerUnavailable(
+                    "Gemini requiere una cuenta o cuota habilitada para este modelo. "
+                    "Revisa el uso de la API en Google AI Studio."
+                ) from exc
+            if exc.code == 404:
+                raise SummarizerFailed(
+                    "El modelo de Gemini no está disponible. Revisa GEMINI_MODEL."
+                ) from exc
+            if exc.code == 429:
+                raise SummarizerUnavailable(
+                    "Gemini limitó las solicitudes. Espera un momento y vuelve a intentar."
+                ) from exc
+            if exc.code == 503:
+                raise SummarizerUnavailable(
+                    "Gemini no pudo atender la solicitud ahora. Vuelve a intentar."
                 ) from exc
             raise SummarizerFailed(
-                f"Ollama respondió con el estado HTTP {exc.code}."
+                f"Gemini respondió con el estado HTTP {exc.code}."
             ) from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise SummarizerUnavailable(
-                "No se pudo conectar con Ollama. Comprueba que esté activo y que "
-                "OLLAMA_BASE_URL sea accesible desde la API."
+                "No se pudo conectar con Gemini. Comprueba GEMINI_BASE_URL "
+                "y la conexión de red."
             ) from exc
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-            raise SummarizerFailed("Ollama devolvió una respuesta no válida.") from exc
+            raise SummarizerFailed("Gemini devolvió una respuesta no válida.") from exc
 
         if not isinstance(body, dict):
-            raise SummarizerFailed("Ollama devolvió una respuesta no válida.")
+            raise SummarizerFailed("Gemini devolvió una respuesta no válida.")
         return body
 
     @staticmethod
@@ -220,10 +197,10 @@ class OllamaSummarizer:
             parsed = json.loads(candidate)
         except json.JSONDecodeError as exc:
             raise SummarizerFailed(
-                "Ollama no devolvió el resumen en el formato esperado."
+                "Gemini no devolvió el resumen en el formato esperado."
             ) from exc
         if not isinstance(parsed, dict):
-            raise SummarizerFailed("Ollama devolvió un resumen no válido.")
+            raise SummarizerFailed("Gemini devolvió un resumen no válido.")
         return parsed
 
     def _request_summary(
@@ -262,36 +239,29 @@ class OllamaSummarizer:
             "messages": messages,
             "stream": False,
         }
-        if self._resolved_api_style() == "native":
-            payload["format"] = _SUMMARY_SCHEMA
-            payload["options"] = {"temperature": 0}
-
         response = self._post(payload)
         try:
-            if self._resolved_api_style() == "openai":
-                choices = response.get("choices")
-                if not isinstance(choices, list) or not choices:
-                    raise KeyError("choices")
-                first_choice = choices[0]
-                if not isinstance(first_choice, dict):
-                    raise KeyError("message")
-                message = first_choice.get("message")
-            else:
-                message = response.get("message")
+            choices = response.get("choices")
+            if not isinstance(choices, list) or not choices:
+                raise KeyError("choices")
+            first_choice = choices[0]
+            if not isinstance(first_choice, dict):
+                raise KeyError("message")
+            message = first_choice.get("message")
             if not isinstance(message, dict):
                 raise KeyError("message")
             content = message.get("content")
         except (KeyError, IndexError, TypeError) as exc:
-            raise SummarizerFailed("Ollama devolvió una respuesta incompleta.") from exc
+            raise SummarizerFailed("Gemini devolvió una respuesta incompleta.") from exc
         if not isinstance(content, str) or not content.strip():
-            raise SummarizerFailed("Ollama devolvió un resumen vacío.")
+            raise SummarizerFailed("Gemini devolvió un resumen vacío.")
         return self._parse_content(content)
 
     @staticmethod
     def _normalized_summary(payload: dict[str, object]) -> _StructuredSummary:
         summary = payload.get("executive_summary")
         if not isinstance(summary, str) or not summary.strip():
-            raise SummarizerFailed("Ollama no generó un resumen utilizable.")
+            raise SummarizerFailed("Gemini no generó un resumen utilizable.")
 
         def string_list(field: str, limit: int) -> list[str]:
             value = payload.get(field)

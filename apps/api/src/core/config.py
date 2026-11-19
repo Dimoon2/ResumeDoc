@@ -7,7 +7,6 @@ spec D-06 (30 min access / 7 days refresh) and OCR language follows D-03 (spa).
 """
 
 from functools import lru_cache
-from typing import Literal
 from urllib.parse import urlparse
 
 from pydantic import Field, ValidationInfo, field_validator
@@ -41,13 +40,11 @@ class Settings(BaseSettings):
     # OCR (spec D-03)
     ocr_lang: str = Field(default="", validate_default=True)
 
-    # Ollama: API local por defecto; Cloud puede usarse con una URL terminada
-    # en /v1 y una OLLAMA_API_KEY.
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2"
-    ollama_api_key: str = ""
-    ollama_api_style: Literal["auto", "native", "openai"] = "auto"
-    ollama_timeout_s: float = 180.0
+    # Gemini Developer API (OpenAI-compatible chat completions).
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    gemini_model: str = "gemini-flash-lite-latest"
+    gemini_api_key: str = ""
+    gemini_timeout_s: float = 180.0
 
     # Bootstrap del primer admin (spec D-22): opcionales; si ambas están
     # definidas, se crea el administrador inicial al arrancar. Nunca vía endpoint.
@@ -91,26 +88,26 @@ class Settings(BaseSettings):
             )
         return value
 
-    @field_validator("ollama_timeout_s")
+    @field_validator("gemini_timeout_s")
     @classmethod
-    def validate_ollama_timeout(cls, value: float) -> float:
+    def validate_gemini_timeout(cls, value: float) -> float:
         if value <= 0:
-            raise ValueError("OLLAMA_TIMEOUT_S debe ser positivo.")
+            raise ValueError("GEMINI_TIMEOUT_S debe ser positivo.")
         return value
 
-    @field_validator("ollama_base_url")
+    @field_validator("gemini_base_url")
     @classmethod
-    def validate_ollama_base_url(cls, value: str) -> str:
+    def validate_gemini_base_url(cls, value: str) -> str:
         parsed = urlparse(value.strip())
         if parsed.scheme not in ("http", "https") or not parsed.netloc:
-            raise ValueError("OLLAMA_BASE_URL debe ser una URL HTTP o HTTPS válida.")
+            raise ValueError("GEMINI_BASE_URL debe ser una URL HTTP o HTTPS válida.")
         return value.strip().rstrip("/")
 
-    @field_validator("ollama_model")
+    @field_validator("gemini_model")
     @classmethod
-    def validate_ollama_model(cls, value: str) -> str:
+    def validate_gemini_model(cls, value: str) -> str:
         if not value.strip():
-            raise ValueError("OLLAMA_MODEL no puede estar vacío.")
+            raise ValueError("GEMINI_MODEL no puede estar vacío.")
         return value.strip()
 
 

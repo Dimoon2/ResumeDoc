@@ -26,11 +26,11 @@ class SummarizerError(Exception):
 
 
 class SummarizerUnavailable(SummarizerError):
-    """Ollama is not configured or cannot be reached."""
+    """Gemini is not configured or cannot be reached."""
 
 
 class SummarizerFailed(SummarizerError):
-    """Ollama returned an error or an unusable response."""
+    """Gemini returned an error or an unusable response."""
 
 
 class Summarizer(Protocol):

@@ -1,5 +1,5 @@
 """Driven adapters for text summarization."""
 
-from src.adapters.summarization.ollama import OllamaSummarizer
+from src.adapters.summarization.gemini import GeminiSummarizer
 
-__all__ = ["OllamaSummarizer"]
+__all__ = ["GeminiSummarizer"]
