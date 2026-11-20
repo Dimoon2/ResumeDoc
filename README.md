@@ -1,6 +1,25 @@
-# ResumeDoc — Capa de datos
+# ResumeDoc
 
-Solo la capa de base de datos (SQLModel + PostgreSQL en Neon). No incluye backend ni frontend.
+Aplicación web con frontend React, API FastAPI, OCR, resúmenes y PostgreSQL.
+
+## Abrir una instancia en Render
+
+Cuando los cambios de este repositorio estén en GitHub, abre el
+[despliegue de ResumeDoc en Render](https://render.com/deploy?repo=https://github.com/Dimoon2/ResumeDoc),
+conecta GitHub y pulsa **Apply**. Render prepara la web, la API, PostgreSQL y
+Redis; al finalizar, abre el enlace del servicio `resumedoc-web`.
+
+El Blueprint usa PostgreSQL gratuito para facilitar una demo. Render elimina
+esa base de datos a los 30 días; para guardar datos de forma permanente,
+cambia `plan: free` por un plan PostgreSQL de pago en `render.yaml` antes de
+desplegar. API y Redis usan planes de pago porque necesitan almacenamiento
+persistente. Render muestra los recursos y el costo antes de crearlos.
+
+Los resúmenes con IA requieren agregar `GEMINI_API_KEY` al servicio
+`resumedoc-api` después del despliegue. Sin ella, el resto de la aplicación
+puede arrancar, pero la generación con Gemini no estará disponible.
+
+Guía local de la base de datos y migraciones:
 
 ## Requisitos
 

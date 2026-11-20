@@ -55,7 +55,7 @@ def _set_cookie(response: Response, token: str) -> None:
         max_age=get_settings().jwt_access_ttl,
         httponly=True,
         samesite="lax",
-        # secure=False para desarrollo HTTP; activar en producción HTTPS.
+        secure=get_settings().cookie_secure,
     )
 
 

@@ -46,6 +46,17 @@ class Settings(BaseSettings):
 
     # Orígenes permitidos para cookies con credenciales (frontend Vite, 5173).
     cors_origins: str = "http://localhost:5173"
+    cookie_secure: bool = False
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def use_psycopg3_driver(cls, value: str) -> str:
+        value = str(value)
+        if value.startswith("postgres://"):
+            value = "postgresql://" + value.removeprefix("postgres://")
+        if value.startswith("postgresql://"):
+            value = "postgresql+psycopg://" + value.removeprefix("postgresql://")
+        return value
 
     @field_validator(
         "database_url", "redis_url", "storage_dir", "jwt_secret", "ocr_lang"

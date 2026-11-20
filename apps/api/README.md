@@ -17,6 +17,26 @@ arquitectura hexagonal, cola Celery/Redis y PostgreSQL (rama `data-base`).
 Suite: **73 passed, 3 skipped · pyright 0 errores** (los 3 skips son las
 pruebas de integración, que solo corren con infra real).
 
+## Despliegue conjunto con Render
+
+El repositorio incluye un Blueprint (`/render.yaml`) que despliega la web,
+API, PostgreSQL y Redis en Render. La API y el worker comparten un servicio y
+un disco persistente para que el worker pueda procesar los archivos subidos.
+La primera sincronización ejecuta las migraciones de la base de datos.
+
+Al iniciar el despliegue, Render muestra los servicios y sus planes antes de
+crear recursos. La base de datos está en el plan gratuito (1 GB y con
+caducidad según las condiciones de Render); úsalo para una demo. Para datos
+permanentes, cambia `plan: free` por un plan PostgreSQL de pago antes de
+desplegar. La API y Redis usan planes con disco/persistencia.
+
+Pasos: sube estos cambios al repositorio de GitHub, abre
+<https://render.com/deploy?repo=https://github.com/Dimoon2/ResumeDoc>, conecta
+tu cuenta de GitHub, revisa los recursos y pulsa **Apply**. Al terminar,
+Render muestra el enlace público de `resumedoc-web`. La clave de Gemini es
+opcional para arrancar; sin `GEMINI_API_KEY`, la generación de resúmenes con
+IA no estará disponible. Se puede agregar después en el servicio `resumedoc-api`.
+
 ## Cómo levantar el backend
 
 Requisitos: Python 3.14+, Redis y PostgreSQL 17 (vía Docker). Con

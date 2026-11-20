@@ -73,7 +73,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
     try:
-        cors_origins = get_settings().cors_origins.split(",")
+        cors_origins = [
+            origin.strip()
+            if "://" in origin
+            else f"https://{origin.strip()}"
+            for origin in get_settings().cors_origins.split(",")
+            if origin.strip()
+        ]
     except ValidationError:
         # La validación real ocurre en el lifespan con su mensaje en español.
         cors_origins = []

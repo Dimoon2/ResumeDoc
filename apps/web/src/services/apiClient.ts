@@ -1,4 +1,9 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const configuredApiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+// Render Blueprint supplies the API hostname dynamically; local development
+// continues to use the explicit http://localhost URL.
+const API_URL = configuredApiUrl.includes("://")
+  ? configuredApiUrl
+  : `https://${configuredApiUrl}`;
 
 function extractErrorMessage(payload: unknown): string {
   if (!payload || typeof payload !== "object" || !("detail" in payload)) {
