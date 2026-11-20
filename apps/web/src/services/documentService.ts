@@ -4,6 +4,10 @@ import type {
   DocumentStatusResponse,
   UploadedDocumentResponse,
 } from "../types/document";
+import type {
+  BackendSummaryResponse,
+  SynthesisDepth,
+} from "../types/summary";
 
 export const documentService = {
   /** Lista los documentos del usuario (o todos si es admin). */
@@ -31,9 +35,10 @@ export const documentService = {
 
   /** Endpoint ligero para hacer polling mientras está en pending/processing. */
   getStatus(documentId: number): Promise<DocumentStatusResponse> {
-    return apiRequest<DocumentStatusResponse>(`/documents/${documentId}/status`, {
-      method: "GET",
-    });
+    return apiRequest<DocumentStatusResponse>(
+      `/documents/${documentId}/status`,
+      { method: "GET" }
+    );
   },
 
   /** Lee el texto extraído (solo cuando status === "completed", devuelve texto plano). */
@@ -41,6 +46,20 @@ export const documentService = {
     return apiRequestText(`/documents/${documentId}/text`, {
       method: "GET",
     });
+  },
+
+  /** Genera un resumen bajo demanda a partir del texto extraído del documento. */
+  summarize(
+    documentId: number,
+    depth: SynthesisDepth = "executive"
+  ): Promise<BackendSummaryResponse> {
+    return apiRequest<BackendSummaryResponse>(
+      `/documents/${documentId}/summary`,
+      {
+        method: "POST",
+        body: JSON.stringify({ depth }),
+      }
+    );
   },
 
   /** Sobreescribe el texto extraído con la versión editada por el usuario. */

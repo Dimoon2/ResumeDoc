@@ -11,13 +11,12 @@ function extractErrorMessage(payload: unknown): string {
     return detail;
   }
 
-  // Errores 422 de FastAPI/Pydantic vienen como array de objetos { msg: string }
   if (Array.isArray(detail)) {
     const messages = detail
       .map((item) =>
         typeof item === "object" && item && "msg" in item
           ? String((item as { msg: unknown }).msg)
-          : "",
+          : ""
       )
       .filter(Boolean);
 
@@ -27,10 +26,30 @@ function extractErrorMessage(payload: unknown): string {
   return "No se pudo completar la solicitud.";
 }
 
-async function baseFetch(path: string, init: RequestInit = {}): Promise<Response> {
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshSession(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((res) => res.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+async function baseFetch(
+  path: string,
+  init: RequestInit = {},
+  allowRefresh = true
+): Promise<Response> {
   const headers = new Headers(init.headers);
 
-  // Solo añadimos Content-Type JSON si NO estamos enviando FormData y no fue definido ya
   if (!(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -38,8 +57,15 @@ async function baseFetch(path: string, init: RequestInit = {}): Promise<Response
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers,
-    credentials: "include", // Imprescindible para enviar la cookie HttpOnly access_token
+    credentials: "include",
   });
+
+  if (response.status === 401 && allowRefresh && !path.startsWith("/auth/")) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      return baseFetch(path, init, false);
+    }
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
@@ -49,7 +75,10 @@ async function baseFetch(path: string, init: RequestInit = {}): Promise<Response
   return response;
 }
 
-export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function apiRequest<T>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
   const response = await baseFetch(path, init);
 
   if (response.status === 204) {
@@ -59,7 +88,10 @@ export async function apiRequest<T>(path: string, init: RequestInit = {}): Promi
   return response.json() as Promise<T>;
 }
 
-export async function apiRequestText(path: string, init: RequestInit = {}): Promise<string> {
+export async function apiRequestText(
+  path: string,
+  init: RequestInit = {}
+): Promise<string> {
   const response = await baseFetch(path, init);
   return response.text();
 }
