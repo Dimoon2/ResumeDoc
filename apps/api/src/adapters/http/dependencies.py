@@ -12,6 +12,7 @@ from src.application.ports.document_state_store import DocumentStateStore
 from src.application.ports.file_storage import FileStorage
 from src.application.ports.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.security import PasswordHasher, TokenService
+from src.application.ports.summarization import Summarizer
 from src.application.ports.task_queue import TaskQueue
 from src.domain.user import AuthContext
 
@@ -64,6 +65,11 @@ def get_task_queue(request: Request) -> TaskQueue:
 def get_state_store(request: Request) -> DocumentStateStore:
     """Pipeline state store port wired at startup."""
     return request.app.state.state_store
+
+
+def get_summarizer(request: Request) -> Summarizer:
+    """Summarization port wired at startup."""
+    return request.app.state.summarizer
 
 
 def current_user(

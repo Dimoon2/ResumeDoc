@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_USE_MOCK_AUTH?: string;
+  readonly VITE_USE_MOCK_SUMMARY?: string;
   readonly VITE_API_URL?: string;
 }
 

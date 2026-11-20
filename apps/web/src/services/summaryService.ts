@@ -8,10 +8,70 @@ import type {
 } from "../types/summary";
 import { formatSpanishDate } from "../utils/summaryFiles";
 
-const USE_MOCK_SUMMARY = import.meta.env.VITE_USE_MOCK_AUTH !== "false";
+const USE_MOCK_SUMMARY =
+  import.meta.env.VITE_USE_MOCK_SUMMARY === "true" ||
+  (import.meta.env.VITE_USE_MOCK_SUMMARY !== "false" &&
+    import.meta.env.VITE_USE_MOCK_AUTH !== "false");
+
+interface SummaryApiResponse {
+  id: string;
+  executive_summary: string;
+  key_points: string[];
+  action_items: Array<{ owner: string; task: string; priority: string }>;
+  topics: string[];
+  word_count_original: number;
+  word_count_summary: number;
+  reading_time_minutes: number;
+  source_excerpt: string;
+}
 
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function toSummaryDocument(
+  raw: SummaryApiResponse,
+  params: {
+    file?: File;
+    fileName: string;
+    fileType: FileFormat;
+    mimeType: string;
+    fileSizeLabel: string;
+    currentUser: AuthUser;
+  },
+  originalUrl?: string,
+): SummaryDocument {
+  return {
+    id: raw.id,
+    title:
+      params.fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ") ||
+      "Documento sin título",
+    fileName: params.fileName,
+    fileType: params.fileType,
+    fileSizeLabel: params.fileSizeLabel,
+    mimeType: params.mimeType,
+    originalUrl,
+    createdAt: new Date().toISOString(),
+    ownerId: String(params.currentUser.id),
+    ownerName: params.currentUser.name,
+    isOwnedByMe: true,
+    executiveSummary: raw.executive_summary,
+    keyPoints: raw.key_points,
+    actionItems: raw.action_items.map((action) => ({
+      owner: action.owner,
+      task: action.task,
+      priority:
+        action.priority === "Alta" || action.priority === "Baja"
+          ? action.priority
+          : "Media",
+    })),
+    topics: raw.topics,
+    wordCountOriginal: raw.word_count_original,
+    wordCountSummary: raw.word_count_summary,
+    readingTimeMinutes: raw.reading_time_minutes,
+    sourceExcerpt: raw.source_excerpt,
+    sharedWith: [],
+  };
 }
 
 async function pollDocumentUntilCompleted(documentId: number): Promise<void> {
@@ -107,19 +167,20 @@ export const summaryService = {
     if (params.file) {
       const uploaded = await documentService.upload(params.file);
       await pollDocumentUntilCompleted(uploaded.id);
-      const extractedText = await documentService.getText(uploaded.id);
+      const raw = await apiRequest<SummaryApiResponse>(
+        `/documents/${uploaded.id}/summary`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            depth: params.depth,
+          }),
+        },
+      );
 
-      // TODO Backend: reemplazar por el endpoint real de generación de resumen cuando exista
-      return apiRequest<SummaryDocument>(`/documents/${uploaded.id}/summary`, {
-        method: "POST",
-        body: JSON.stringify({
-          depth: params.depth,
-          extractedText,
-        }),
-      });
+      return toSummaryDocument(raw, params, originalUrl);
     }
 
-    return apiRequest<SummaryDocument>("/summaries/text", {
+    const raw = await apiRequest<SummaryApiResponse>("/summaries/text", {
       method: "POST",
       body: JSON.stringify({
         fileName: params.fileName,
@@ -127,6 +188,8 @@ export const summaryService = {
         depth: params.depth,
       }),
     });
+
+    return toSummaryDocument(raw, params);
   },
 
   /**

@@ -1,1 +1,5 @@
-"""Driven adapters: local summarization (technique to be decided, P-01)."""
+"""Driven adapters for text summarization."""
+
+from src.adapters.summarization.gemini import GeminiSummarizer
+
+__all__ = ["GeminiSummarizer"]

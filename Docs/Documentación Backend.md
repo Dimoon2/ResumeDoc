@@ -4,7 +4,7 @@ API de ResumeDoc: subida de PDFs e imágenes, extracción de texto (pypdf + OCR 
 
 > Este documento cubre únicamente el backend. El arranque general del proyecto está en el [README principal](../README.md). Los bloques de comandos se ejecutan desde la **raíz del repositorio**, salvo que se indique lo contrario.
 
-## Estado: qué está hecho (Fases 0–4)
+## Estado: qué está hecho (Fases 0–5)
 
 | Fase | Tareas | Qué entrega |
 |---|---|---|
@@ -13,6 +13,7 @@ API de ResumeDoc: subida de PDFs e imágenes, extracción de texto (pypdf + OCR 
 | 2 — Subida | T-06…T-10 | `POST /documents` (validación extensión/vacío/20 MB → 201 `{id, status:"pending"}`), guardado `{uuid}.{ext}`, puerto `DocumentRepository` + doble en memoria, encolado por Celery con **compensación si el broker falla** (sin huérfanos en BD ni disco) |
 | 3 — Pipeline | T-11…T-17 | Máquina de estados en Redis (`pending → processing → completed/error`), worker Celery con `soft_time_limit` (5 min) y hook de huérfanos al arrancar, PDF: capa textual pypdf + OCR por página sin texto, PDF cifrado → error, > 100 páginas → error, `GET /documents/{id}/status` (polling, 404 uniforme) |
 | 4 — Integración | T-18, T-19 | Adaptadores SQLModel reales sobre el paquete `db/` (documentos y `token_refresco`, con `claim` atómico y revocación por familia), migraciones Alembic aplicadas, pruebas de integración auto-skipped sin infra |
+| 5 — Resúmenes | — | Generación con Gemini Developer API para documentos procesados y texto pegado; resumen ejecutivo, puntos clave, acciones y temas |
 
 Suite (tests movidos a `tests/` en la raíz): **134 passed · pyright 0 errores**. Quedan 3 fallos de entorno si no está instalado el binario `tesseract` (pruebas de OCR real) y 10 skips: las pruebas de integración solo corren con infra real (no `memory://`).
 
@@ -48,6 +49,8 @@ Rellena **TODAS** las variables: sin `.env` completo no arranca (fail-fast con m
 - `REDIS_URL` — `redis://localhost:6379/0` con el contenedor de abajo.
 
 Para el front: `CORS_ORIGINS` (default `http://localhost:5173`) y `COOKIE_SECURE` (default `false`, solo desarrollo HTTP).
+
+Los resúmenes con Gemini necesitan `GEMINI_API_KEY` (sin ella los endpoints de resumen responden 503); `GEMINI_BASE_URL`, `GEMINI_MODEL` y `GEMINI_TIMEOUT_S` tienen valores por defecto.
 
 ### 3. Infraestructura local (solo si no usas la BD del equipo)
 
@@ -113,7 +116,7 @@ INTEGRATION_DATABASE_URL=postgresql://resumedoc:resumedoc@localhost:5434/resumed
 
 ## Variables de entorno
 
-Todas obligatorias salvo las marcadas — véase `.env.example` con la plantilla completa (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`, `STORAGE_DIR`, límites de D-17, `OCR_LANG`, `CORS_ORIGINS`, `ADMIN_EMAIL`/`ADMIN_PASSWORD` opcionales).
+Todas obligatorias salvo las marcadas — véase `.env.example` con la plantilla completa (`JWT_SECRET`, `DATABASE_URL`, `REDIS_URL`, `STORAGE_DIR`, límites de D-17, `OCR_LANG`, `CORS_ORIGINS`, `ADMIN_EMAIL`/`ADMIN_PASSWORD` opcionales). Los resúmenes añaden `GEMINI_API_KEY` (necesaria para resumir) y `GEMINI_BASE_URL`/`GEMINI_MODEL`/`GEMINI_TIMEOUT_S` (con valores por defecto).
 
 ## Contrato de autenticación (API)
 
@@ -145,9 +148,26 @@ Cada refresh invalida el token anterior y emite uno nuevo de la misma familia; r
 3. El estado se consulta con `GET /documents/{id}/status` hasta `completed`.
 4. El texto se persiste en BD solo con un guardado explícito del usuario (D-25).
 
+## Resúmenes con Gemini
+
+`POST /documents/{id}/summary` resume el texto extraído de un documento completado y
+`POST /summaries/text` resume texto pegado desde el frontend.
+
+La API usa Gemini Developer API mediante su endpoint compatible con OpenAI.
+La configuración predeterminada usa `gemini-flash-lite-latest`. Define
+`GEMINI_API_KEY` en `apps/api/.env`; `GEMINI_BASE_URL` configura el endpoint,
+`GEMINI_MODEL` selecciona el modelo y `GEMINI_TIMEOUT_S` controla el tiempo
+máximo de cada solicitud. La plantilla completa está en `.env.example`.
+Consulta los modelos disponibles y la cuota de tu cuenta en Google AI Studio.
+
+Para usar el flujo real desde el frontend, configura
+`VITE_USE_MOCK_AUTH=false` en `apps/web/.env` y reinicia Vite. Así se usan
+autenticación y resúmenes del backend. En modo mock la interfaz conserva su
+resumen de demostración.
+
 ## Arquitectura
 
-Hexagonal estricta: `domain/` (stdlib solo) → `application/` (casos de uso y puertos) → `adapters/` (FastAPI, SQLModel, Redis, filesystem, Tesseract, Celery). La composición solo en `src/main.py` y `src/worker.py`. Cambiar de ORM toca solo `adapters/persistence/`; cambiar de OCR, solo `adapters/extraction/tesseract.py` + 2 líneas de `worker.py`.
+Hexagonal estricta: `domain/` (stdlib solo) → `application/` (casos de uso y puertos) → `adapters/` (FastAPI, SQLModel, Redis, filesystem, Tesseract, Celery, Gemini). La composición solo en `src/main.py` y `src/worker.py`. Cambiar de ORM toca solo `adapters/persistence/`; cambiar de OCR, solo `adapters/extraction/tesseract.py` + 2 líneas de `worker.py`.
 
 ## Pendientes conocidos
 

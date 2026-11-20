@@ -1,13 +1,14 @@
 """Application configuration loaded from environment variables (SDD/plan.md §8).
 
-Every setting is mandatory: no variable has a usable default value, so any
-missing variable fails fast at startup with a Spanish message. The provisional
+Core infrastructure settings are mandatory and fail fast at startup with a
+Spanish message. Optional settings have usable defaults. The provisional
 limits follow spec D-17 (20 MB, 100 pages, 300 s), the token TTLs follow
 spec D-06 (30 min access / 7 days refresh) and OCR language follows D-03 (spa).
 """
 
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlparse
 
 from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -43,6 +44,12 @@ class Settings(BaseSettings):
 
     # OCR (spec D-03)
     ocr_lang: str = Field(default="", validate_default=True)
+
+    # Gemini Developer API (OpenAI-compatible chat completions).
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    gemini_model: str = "gemini-flash-lite-latest"
+    gemini_api_key: str = ""
+    gemini_timeout_s: float = 180.0
 
     # Bootstrap del primer admin (spec D-22): opcionales; si ambas están
     # definidas, se crea el administrador inicial al arrancar. Nunca vía endpoint.
@@ -89,6 +96,28 @@ class Settings(BaseSettings):
                 "Ninguna variable tiene valor por defecto."
             )
         return value
+
+    @field_validator("gemini_timeout_s")
+    @classmethod
+    def validate_gemini_timeout(cls, value: float) -> float:
+        if value <= 0:
+            raise ValueError("GEMINI_TIMEOUT_S debe ser positivo.")
+        return value
+
+    @field_validator("gemini_base_url")
+    @classmethod
+    def validate_gemini_base_url(cls, value: str) -> str:
+        parsed = urlparse(value.strip())
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError("GEMINI_BASE_URL debe ser una URL HTTP o HTTPS válida.")
+        return value.strip().rstrip("/")
+
+    @field_validator("gemini_model")
+    @classmethod
+    def validate_gemini_model(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("GEMINI_MODEL no puede estar vacío.")
+        return value.strip()
 
 
 @lru_cache
