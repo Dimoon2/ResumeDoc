@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -7,12 +8,15 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "./AuthContext";
+import { documentService } from "../services/documentService";
 import {
-  WORKSPACE_USERS,
-  buildInitialDocuments,
-} from "../data/mockWorkspaceData";
+  mapBackendSummaryToDocument,
+  summaryService,
+} from "../services/summaryService";
+import type { DocumentItem } from "../types/document";
 import type {
   ActiveNavSection,
+  BackendSummaryResponse,
   ExportFormat,
   SharedAccessEntry,
   SummaryDocument,
@@ -20,6 +24,9 @@ import type {
 } from "../types/summary";
 import {
   downloadExportFile,
+  formatBytes,
+  formatSpanishDate,
+  inferFileFormat,
   parseImportedSummaryFile,
 } from "../utils/summaryFiles";
 
@@ -27,6 +34,8 @@ interface WorkspaceContextValue {
   currentUser: User;
   users: User[];
   documents: SummaryDocument[];
+  isLoadingDocuments: boolean;
+  loadError: string | null;
   activeNav: ActiveNavSection;
   selectedSharedUserId: string | null;
   activeDocumentId: string | null;
@@ -35,11 +44,13 @@ interface WorkspaceContextValue {
   setActiveNav: (nav: ActiveNavSection) => void;
   setSelectedSharedUserId: (userId: string | null) => void;
   setActiveDocumentId: (docId: string | null) => void;
+  openDocument: (doc: SummaryDocument) => Promise<void>;
+  refreshDocuments: () => Promise<void>;
   setSearchQuery: (query: string) => void;
   dismissToast: () => void;
   showToast: (message: string) => void;
   addDocument: (doc: SummaryDocument) => void;
-  deleteDocument: (docId: string) => void;
+  deleteDocument: (docId: string) => Promise<void>;
   updateDocumentShare: (
     docId: string,
     nextSharedWith: SharedAccessEntry[]
@@ -52,6 +63,43 @@ interface WorkspaceContextValue {
 const WorkspaceContext = createContext<WorkspaceContextValue | undefined>(
   undefined
 );
+
+function readSummaryCache(key: string): Record<number, BackendSummaryResponse> {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as Record<number, BackendSummaryResponse>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeSummaryCache(
+  key: string,
+  cache: Record<number, BackendSummaryResponse>
+) {
+  try {
+    localStorage.setItem(key, JSON.stringify(cache));
+  } catch {
+    // Ignorar errores de cuota
+  }
+}
+
+function readLocalDocsCache(key: string): SummaryDocument[] {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as SummaryDocument[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalDocsCache(key: string, docs: SummaryDocument[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(docs));
+  } catch {
+    // Ignorar errores de cuota
+  }
+}
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { user: authUser } = useAuth();
@@ -69,29 +117,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       id: String(authUser?.id ?? "guest"),
       name,
       initials: initials || "U",
-      role: "Miembro",
-      department: "Espacio de trabajo",
+      role: "Usuario",
+      department: "ResumeDoc",
       email: authUser?.email ?? "",
     };
   }, [authUser]);
 
-  const storageKey = `resumedoc.workspace.v1.${currentUser.id}`;
+  const summaryCacheKey = `resumedoc.summaries.v1.${currentUser.id}`;
+  const localOnlyDocsKey = `resumedoc.local_docs.v1.${currentUser.id}`;
 
-  const [documents, setDocuments] = useState<SummaryDocument[]>(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed as SummaryDocument[];
-        }
-      }
-    } catch {
-      // Fallback al seed inicial
-    }
-    return buildInitialDocuments(currentUser);
-  });
-
+  const [documents, setDocuments] = useState<SummaryDocument[]>([]);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeNav, setActiveNav] = useState<ActiveNavSection>("my-summaries");
   const [selectedSharedUserId, setSelectedSharedUserId] = useState<string | null>(
     null
@@ -100,17 +137,93 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  useEffect(() => {
+  const mapBackendItemToDoc = useCallback(
+    (
+      item: DocumentItem,
+      cache: Record<number, BackendSummaryResponse>
+    ): SummaryDocument => {
+      const cachedSummary = cache[item.id];
+      const fileType = inferFileFormat(item.name);
+      const sizeLabel = formatBytes(item.size_bytes);
+
+      if (cachedSummary) {
+        return mapBackendSummaryToDocument({
+          backendId: item.id,
+          summary: cachedSummary,
+          fileName: item.name,
+          fileType,
+          fileSizeLabel: sizeLabel,
+          currentUser: {
+            id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+          },
+        });
+      }
+
+      const statusLabel =
+        item.status === "completed"
+          ? "Documento procesado. Haz clic en «Abrir» para generar su resumen."
+          : item.status === "error"
+            ? item.error || "Ocurrió un error al procesar este documento."
+            : "Documento en procesamiento en segundo plano...";
+
+      return {
+        id: String(item.id),
+        backendId: item.id,
+        pipelineStatus: item.status,
+        pipelineError: item.error,
+        needsSummaryGeneration: item.status === "completed",
+        title: item.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " "),
+        fileName: item.name,
+        fileType,
+        fileSizeLabel: sizeLabel,
+        createdAt: formatSpanishDate(new Date()),
+        ownerId: currentUser.id,
+        ownerName: currentUser.name,
+        isOwnedByMe: true,
+        executiveSummary: statusLabel,
+        keyPoints: [],
+        actionItems: [],
+        topics: [fileType],
+        wordCountOriginal: 0,
+        wordCountSummary: 0,
+        readingTimeMinutes: 1,
+        sourceExcerpt: "",
+        sharedWith: [],
+      };
+    },
+    [currentUser]
+  );
+
+  const refreshDocuments = useCallback(async () => {
+    setIsLoadingDocuments(true);
+    setLoadError(null);
     try {
-      // Las blob: URLs no sobreviven recargas, se omiten al persistir
-      const serializable = documents.map(({ originalUrl, ...rest }) =>
-        originalUrl?.startsWith("blob:") ? rest : { ...rest, originalUrl }
+      const items = await documentService.list();
+      const summaryCache = readSummaryCache(summaryCacheKey);
+      const localDocs = readLocalDocsCache(localOnlyDocsKey);
+
+      const backendMapped = items
+        .slice()
+        .reverse()
+        .map((item) => mapBackendItemToDoc(item, summaryCache));
+
+      setDocuments([...localDocs, ...backendMapped]);
+    } catch (err) {
+      setLoadError(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron cargar tus documentos desde el servidor."
       );
-      localStorage.setItem(storageKey, JSON.stringify(serializable));
-    } catch {
-      // Ignorar errores de cuota de almacenamiento
+    } finally {
+      setIsLoadingDocuments(false);
     }
-  }, [documents, storageKey]);
+  }, [mapBackendItemToDoc, summaryCacheKey, localOnlyDocsKey]);
+
+  useEffect(() => {
+    void refreshDocuments();
+  }, [refreshDocuments]);
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -121,18 +234,110 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const showToast = (message: string) => setToastMessage(message);
   const dismissToast = () => setToastMessage(null);
 
+  const persistSummaryInCache = useCallback(
+    (doc: SummaryDocument) => {
+      if (doc.backendId !== undefined && !doc.needsSummaryGeneration) {
+        const cache = readSummaryCache(summaryCacheKey);
+        cache[doc.backendId] = {
+          id: `summary-${doc.backendId}`,
+          executive_summary: doc.executiveSummary,
+          key_points: doc.keyPoints,
+          action_items: doc.actionItems.map((a) => ({
+            owner: a.owner,
+            task: a.task,
+            priority: a.priority,
+          })),
+          topics: doc.topics,
+          word_count_original: doc.wordCountOriginal,
+          word_count_summary: doc.wordCountSummary,
+          reading_time_minutes: doc.readingTimeMinutes,
+          source_excerpt: doc.sourceExcerpt,
+        };
+        writeSummaryCache(summaryCacheKey, cache);
+      } else if (doc.backendId === undefined) {
+        const currentLocal = readLocalDocsCache(localOnlyDocsKey);
+        const updated = [
+          doc,
+          ...currentLocal.filter((existing) => existing.id !== doc.id),
+        ];
+        writeLocalDocsCache(localOnlyDocsKey, updated);
+      }
+    },
+    [summaryCacheKey, localOnlyDocsKey]
+  );
+
   const addDocument = (doc: SummaryDocument) => {
-    setDocuments((prev) => [doc, ...prev]);
+    persistSummaryInCache(doc);
+    setDocuments((prev) => [doc, ...prev.filter((d) => d.id !== doc.id)]);
   };
 
-  const deleteDocument = (docId: string) => {
-    setDocuments((prev) => {
-      const target = prev.find((d) => d.id === docId);
-      if (target?.originalUrl?.startsWith("blob:")) {
-        URL.revokeObjectURL(target.originalUrl);
+  const openDocument = async (doc: SummaryDocument) => {
+    setActiveDocumentId(doc.id);
+
+    if (doc.backendId !== undefined && doc.needsSummaryGeneration) {
+      try {
+        const summary = await summaryService.generateForExistingDocument(
+          doc.backendId,
+          "executive"
+        );
+        const hydrated = mapBackendSummaryToDocument({
+          backendId: doc.backendId,
+          summary,
+          fileName: doc.fileName,
+          fileType: doc.fileType,
+          fileSizeLabel: doc.fileSizeLabel,
+          mimeType: doc.mimeType,
+          originalUrl: doc.originalUrl,
+          currentUser: {
+            id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+          },
+        });
+        persistSummaryInCache(hydrated);
+        setDocuments((prev) =>
+          prev.map((d) => (d.id === doc.id ? hydrated : d))
+        );
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : "No se pudo generar el resumen del documento."
+        );
       }
-      return prev.filter((d) => d.id !== docId);
-    });
+    }
+  };
+
+  const deleteDocument = async (docId: string) => {
+    const target = documents.find((d) => d.id === docId);
+    if (!target) return;
+
+    if (target.backendId !== undefined) {
+      try {
+        await documentService.remove(target.backendId);
+        const cache = readSummaryCache(summaryCacheKey);
+        delete cache[target.backendId];
+        writeSummaryCache(summaryCacheKey, cache);
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : "No se pudo eliminar el documento."
+        );
+        return;
+      }
+    } else {
+      const localDocs = readLocalDocsCache(localOnlyDocsKey).filter(
+        (d) => d.id !== docId
+      );
+      writeLocalDocsCache(localOnlyDocsKey, localDocs);
+    }
+
+    if (target.originalUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(target.originalUrl);
+    }
+
+    setDocuments((prev) => prev.filter((d) => d.id !== docId));
     if (activeDocumentId === docId) {
       setActiveDocumentId(null);
     }
@@ -152,7 +357,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const importSummaryFile = async (file: File): Promise<SummaryDocument> => {
     const importedDoc = await parseImportedSummaryFile(file, currentUser);
-    setDocuments((prev) => [importedDoc, ...prev]);
+    addDocument(importedDoc);
     setActiveNav("my-summaries");
     setActiveDocumentId(null);
     showToast(`Resumen importado: "${importedDoc.title}".`);
@@ -178,8 +383,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const value = useMemo<WorkspaceContextValue>(
     () => ({
       currentUser,
-      users: WORKSPACE_USERS,
+      users: [], // Sin usuarios mock hasta que exista endpoint de compartidos
       documents,
+      isLoadingDocuments,
+      loadError,
       activeNav,
       selectedSharedUserId,
       activeDocumentId,
@@ -188,6 +395,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setActiveNav,
       setSelectedSharedUserId,
       setActiveDocumentId,
+      openDocument,
+      refreshDocuments,
       setSearchQuery,
       dismissToast,
       showToast,
@@ -201,11 +410,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [
       currentUser,
       documents,
+      isLoadingDocuments,
+      loadError,
       activeNav,
       selectedSharedUserId,
       activeDocumentId,
       searchQuery,
       toastMessage,
+      refreshDocuments,
     ]
   );
 

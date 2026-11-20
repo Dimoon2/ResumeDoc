@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, LayoutGrid, List } from "lucide-react";
+import { FileText, LayoutGrid, List, Loader2, RefreshCw } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useWorkspace } from "../../contexts/WorkspaceContext";
 import type { FileFormat, SummaryDocument } from "../../types/summary";
+import { OctyMascot } from "../ui/OctyMascot";
 import { DashboardLayout } from "./DashboardLayout";
 import { DocumentCard } from "./DocumentCard";
 import { LibraryTableView } from "./LibraryTableView";
@@ -23,12 +24,16 @@ export function DashboardWorkspace() {
     currentUser,
     users,
     documents,
+    isLoadingDocuments,
+    loadError,
     activeNav,
     selectedSharedUserId,
     activeDocumentId,
     searchQuery,
     toastMessage,
     setActiveDocumentId,
+    openDocument,
+    refreshDocuments,
     setSearchQuery,
     dismissToast,
     showToast,
@@ -270,7 +275,34 @@ export function DashboardWorkspace() {
                 </div>
               </div>
 
-              {myDocuments.length === 0 ? (
+              {isLoadingDocuments ? (
+                <div className="rounded-2xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border p-10 text-center space-y-3 shadow-sm">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto text-brand-primary dark:text-brand-accent" />
+                  <p className="text-[14px] font-semibold text-brand-dark dark:text-night-text">
+                    Cargando tus documentos desde el servidor...
+                  </p>
+                </div>
+              ) : loadError ? (
+                <div className="rounded-2xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border p-8 sm:p-10 text-center space-y-4 shadow-sm">
+                  <OctyMascot pose="error" size={52} className="mx-auto" />
+                  <div className="space-y-1">
+                    <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
+                      No se pudo conectar con el servidor
+                    </h2>
+                    <p className="text-[14px] text-brand-dark/70 dark:text-night-text/65 max-w-md mx-auto">
+                      {loadError}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void refreshDocuments()}
+                    className="inline-flex h-10 items-center gap-2 rounded-xl bg-brand-primary px-4 text-[13px] font-semibold text-white hover:bg-brand-dark dark:hover:bg-[#519EE2] transition-all duration-150 active:scale-[0.98]"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Reintentar</span>
+                  </button>
+                </div>
+              ) : myDocuments.length === 0 ? (
                 <div className="animate-fade-up rounded-2xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border p-8 sm:p-12 text-center space-y-3 shadow-sm">
                   <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-brand-light dark:bg-night-elevated text-brand-primary dark:text-brand-accent">
                     <FileText className="h-5 w-5" />
@@ -307,12 +339,12 @@ export function DashboardWorkspace() {
                       <DocumentCard
                         doc={doc}
                         layout="list"
-                        onOpenDocument={(d) => setActiveDocumentId(d.id)}
+                        onOpenDocument={(d) => void openDocument(d)}
                         onViewOriginal={(d) => setOriginalTargetDoc(d)}
                         onQuickExport={(d) => exportDocumentDirect(d, "txt")}
                         onOpenExportModal={(d) => setExportTargetDoc(d)}
                         onShareDocument={(d) => setShareTargetDocId(d.id)}
-                        onDeleteDocument={deleteDocument}
+                        onDeleteDocument={(id) => void deleteDocument(id)}
                       />
                     </div>
                   ))}
@@ -328,12 +360,12 @@ export function DashboardWorkspace() {
                       <DocumentCard
                         doc={doc}
                         layout="grid"
-                        onOpenDocument={(d) => setActiveDocumentId(d.id)}
+                        onOpenDocument={(d) => void openDocument(d)}
                         onViewOriginal={(d) => setOriginalTargetDoc(d)}
                         onQuickExport={(d) => exportDocumentDirect(d, "txt")}
                         onOpenExportModal={(d) => setExportTargetDoc(d)}
                         onShareDocument={(d) => setShareTargetDocId(d.id)}
-                        onDeleteDocument={deleteDocument}
+                        onDeleteDocument={(id) => void deleteDocument(id)}
                       />
                     </div>
                   ))}
@@ -347,7 +379,7 @@ export function DashboardWorkspace() {
             selectedUserId={selectedSharedUserId}
             onSelectUser={setSelectedSharedUserId}
             sharedDocuments={sharedDocumentsFiltered}
-            onOpenDocument={(d) => setActiveDocumentId(d.id)}
+            onOpenDocument={(d) => void openDocument(d)}
             onViewOriginal={(d) => setOriginalTargetDoc(d)}
             onQuickExport={(d) => exportDocumentDirect(d, "txt")}
             onOpenExportModal={(d) => setExportTargetDoc(d)}
@@ -356,7 +388,7 @@ export function DashboardWorkspace() {
         ) : (
           <LibraryTableView
             documents={libraryDocuments}
-            onOpenDocument={(d) => setActiveDocumentId(d.id)}
+            onOpenDocument={(d) => void openDocument(d)}
             onViewOriginal={(d) => setOriginalTargetDoc(d)}
             onQuickExport={(d) => exportDocumentDirect(d, "txt")}
             onShareDocument={(d) => setShareTargetDocId(d.id)}

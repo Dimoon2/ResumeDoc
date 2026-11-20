@@ -1,3 +1,5 @@
+import type { DocumentStatus } from "./document";
+
 export type FileFormat = "PDF" | "PNG" | "JPG";
 
 export type SynthesisDepth = "executive" | "detailed" | "bullets";
@@ -27,12 +29,30 @@ export interface User {
   email: string;
 }
 
+export interface BackendSummaryResponse {
+  id: string;
+  executive_summary: string;
+  key_points: string[];
+  action_items: Array<Record<string, string>>;
+  topics: string[];
+  word_count_original: number;
+  word_count_summary: number;
+  reading_time_minutes: number;
+  source_excerpt: string;
+}
+
 export interface SummaryDocument {
   id: string;
+  backendId?: number;
+  pipelineStatus?: DocumentStatus;
+  pipelineError?: string;
+  needsSummaryGeneration?: boolean;
   title: string;
   fileName: string;
   fileType: FileFormat;
   fileSizeLabel: string;
+  mimeType?: string;
+  originalUrl?: string;
   createdAt: string;
   ownerId: string;
   ownerName: string;
@@ -48,8 +68,6 @@ export interface SummaryDocument {
   readingTimeMinutes: number;
   sourceExcerpt: string;
   sharedWith: SharedAccessEntry[];
-  mimeType?: string;
-  originalUrl?: string;
 }
 
 export interface ChatMessage {

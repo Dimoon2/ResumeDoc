@@ -1,4 +1,6 @@
-import { ExternalLink, FileText, Info, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ExternalLink, FileText, Info, Loader2, X } from "lucide-react";
+import { documentService } from "../../../services/documentService";
 import type { SummaryDocument } from "../../../types/summary";
 
 interface OriginalDocumentModalProps {
@@ -10,10 +12,39 @@ export function OriginalDocumentModal({
   doc,
   onClose,
 }: OriginalDocumentModalProps) {
+  const [fullText, setFullText] = useState<string | null>(null);
+  const [loadingText, setLoadingText] = useState(false);
+
+  useEffect(() => {
+    if (!doc || doc.originalUrl || doc.backendId === undefined) {
+      setFullText(null);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingText(true);
+    documentService
+      .getText(doc.backendId)
+      .then((text) => {
+        if (!cancelled) setFullText(text);
+      })
+      .catch(() => {
+        if (!cancelled) setFullText(null);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingText(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [doc]);
+
   if (!doc) return null;
 
   const isImage = doc.fileType === "PNG" || doc.fileType === "JPG";
   const hasLivePreview = Boolean(doc.originalUrl);
+  const displayText = fullText ?? doc.sourceExcerpt;
 
   return (
     <div
@@ -88,10 +119,8 @@ export function OriginalDocumentModal({
               <div className="rounded-xl bg-brand-light dark:bg-night-inset border border-brand-accent dark:border-night-accent px-4 py-3 flex items-start gap-2.5 text-[13px] text-brand-dark dark:text-night-text">
                 <Info className="h-4 w-4 shrink-0 mt-0.5 text-brand-primary dark:text-brand-accent" />
                 <span>
-                  Mostrando el contenido extraído de{" "}
-                  <strong>{doc.fileName}</strong>. Cuando subas un archivo en
-                  esta sesión o conectes el almacenamiento del backend, aquí se
-                  renderizará el PDF o imagen original completo.
+                  Mostrando el texto completo extraído en el servidor para{" "}
+                  <strong>{doc.fileName}</strong>.
                 </span>
               </div>
 
@@ -99,13 +128,22 @@ export function OriginalDocumentModal({
                 <div className="pb-3 border-b border-brand-card/70 dark:border-night-border flex flex-wrap items-center justify-between gap-2 text-[12px] font-semibold text-brand-dark/70 dark:text-night-text/65 tabular-nums">
                   <span>Archivo: {doc.fileName}</span>
                   <span>
-                    {doc.wordCountOriginal.toLocaleString("es-ES")} palabras
-                    originales
+                    {doc.wordCountOriginal > 0
+                      ? `${doc.wordCountOriginal.toLocaleString("es-ES")} palabras originales`
+                      : doc.fileSizeLabel}
                   </span>
                 </div>
-                <p className="text-[14px] leading-[24px] text-brand-dark/90 dark:text-night-text/90 whitespace-pre-wrap">
-                  {doc.sourceExcerpt}
-                </p>
+
+                {loadingText ? (
+                  <div className="py-10 flex items-center justify-center gap-2 text-[13px] text-brand-dark/70 dark:text-night-text/65">
+                    <Loader2 className="h-4 w-4 animate-spin text-brand-primary dark:text-brand-accent" />
+                    <span>Cargando texto extraído...</span>
+                  </div>
+                ) : (
+                  <p className="text-[14px] leading-[24px] text-brand-dark/90 dark:text-night-text/90 whitespace-pre-wrap">
+                    {displayText || "El documento no contiene texto extraído."}
+                  </p>
+                )}
               </div>
             </div>
           )}

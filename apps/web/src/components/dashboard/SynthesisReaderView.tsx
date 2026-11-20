@@ -1,15 +1,6 @@
-import { useState, type FormEvent } from "react";
-import {
-  ArrowLeft,
-  Download,
-  Eye,
-  Loader2,
-  Send,
-  Share2,
-  UserCheck,
-} from "lucide-react";
-import { summaryService } from "../../services/summaryService";
-import type { ChatMessage, SummaryDocument, User } from "../../types/summary";
+import { useState } from "react";
+import { ArrowLeft, Download, Eye, Share2, UserCheck } from "lucide-react";
+import type { SummaryDocument, User } from "../../types/summary";
 import { OctyMascot } from "../ui/OctyMascot";
 
 interface SynthesisReaderViewProps {
@@ -32,10 +23,6 @@ export function SynthesisReaderView({
   onShare,
 }: SynthesisReaderViewProps) {
   const [activeTab, setActiveTab] = useState<ReaderTab>("summary");
-  const [question, setQuestion] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isAsking, setIsAsking] = useState(false);
-  const [askError, setAskError] = useState<string | null>(null);
 
   const reductionPct =
     doc.wordCountOriginal > 0
@@ -47,73 +34,7 @@ export function SynthesisReaderView({
               100
           )
         )
-      : 85;
-
-  const handleAskQuestion = async (e: FormEvent) => {
-    e.preventDefault();
-    const trimmed = question.trim();
-    if (!trimmed || isAsking) return;
-
-    const userMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-      timestamp: new Date().toLocaleTimeString("es-ES", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    const nextHistory = [...messages, userMsg];
-    setMessages(nextHistory);
-    setQuestion("");
-    setAskError(null);
-    setIsAsking(true);
-
-    try {
-      const context = `Título: ${doc.title}
-Resumen Ejecutivo:
-${doc.executiveSummary}
-
-Puntos Clave:
-${doc.keyPoints.map((p, i) => `${i + 1}. ${p}`).join("\n")}
-
-Acciones:
-${doc.actionItems.map((a) => `- ${a.owner} (${a.priority}): ${a.task}`).join("\n")}
-
-Extracto del documento:
-${doc.sourceExcerpt}`;
-
-      const data = await summaryService.askDocument({
-        documentId: doc.id,
-        documentTitle: doc.title,
-        documentContext: context,
-        question: trimmed,
-        history: nextHistory.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      });
-
-      const assistantMsg: ChatMessage = {
-        id: `msg-${Date.now() + 1}`,
-        role: "assistant",
-        content: data.answer,
-        timestamp: new Date().toLocaleTimeString("es-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err) {
-      setAskError(
-        err instanceof Error ? err.message : "Error al consultar el documento."
-      );
-    } finally {
-      setIsAsking(false);
-    }
-  };
+      : 0;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -213,125 +134,151 @@ ${doc.sourceExcerpt}`;
           </div>
 
           <div key={activeTab} className="animate-fade-up">
-            {activeTab === "summary" && (
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  {doc.executiveSummary.split(/\n\n+/).map((paragraph, idx) => (
-                    <p
-                      key={idx}
-                      className="text-[16px] leading-[27px] text-brand-dark/90 dark:text-night-text/90"
-                    >
-                      {paragraph}
-                    </p>
-                  ))}
+            {doc.needsSummaryGeneration && activeTab === "summary" ? (
+              <div className="rounded-2xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+                <OctyMascot pose="thinking" size={56} className="shrink-0" />
+                <div className="space-y-1">
+                  <p className="font-display text-[15px] font-semibold text-brand-dark dark:text-night-text">
+                    Octy está generando el resumen de este documento...
+                  </p>
+                  <p className="text-[13px] text-brand-dark/75 dark:text-night-text/70">
+                    Consultando el texto extraído en el servidor y preparando los puntos clave.
+                  </p>
                 </div>
+              </div>
+            ) : (
+              <>
+                {activeTab === "summary" && (
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      {doc.executiveSummary
+                        .split(/\n\n+/)
+                        .map((paragraph, idx) => (
+                          <p
+                            key={idx}
+                            className="text-[16px] leading-[27px] text-brand-dark/90 dark:text-night-text/90"
+                          >
+                            {paragraph}
+                          </p>
+                        ))}
+                    </div>
 
-                {doc.keyPoints.length > 0 && (
-                  <div className="pt-4 border-t border-brand-card/70 dark:border-night-border space-y-3">
-                    <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
-                      Hallazgos principales
-                    </h2>
-                    <ol className="space-y-2.5">
-                      {doc.keyPoints.map((point, index) => (
-                        <li
-                          key={index}
-                          className="flex items-start gap-3 text-[14px] leading-[22px] text-brand-dark/85 dark:text-night-text/85"
-                        >
-                          <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-light dark:bg-night-elevated border border-brand-card dark:border-night-border text-[11px] font-bold text-brand-dark dark:text-night-text tabular-nums">
-                            {index + 1}
-                          </span>
-                          <span>{point}</span>
-                        </li>
-                      ))}
-                    </ol>
+                    {doc.keyPoints.length > 0 && (
+                      <div className="pt-4 border-t border-brand-card/70 dark:border-night-border space-y-3">
+                        <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
+                          Hallazgos principales
+                        </h2>
+                        <ol className="space-y-2.5">
+                          {doc.keyPoints.map((point, index) => (
+                            <li
+                              key={index}
+                              className="flex items-start gap-3 text-[14px] leading-[22px] text-brand-dark/85 dark:text-night-text/85"
+                            >
+                              <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-light dark:bg-night-elevated border border-brand-card dark:border-night-border text-[11px] font-bold text-brand-dark dark:text-night-text tabular-nums">
+                                {index + 1}
+                              </span>
+                              <span>{point}</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            )}
 
-            {activeTab === "actions" && (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
-                    Puntos Clave Sintetizados
-                  </h2>
-                  <ul className="space-y-2.5">
-                    {doc.keyPoints.map((point, idx) => (
-                      <li
-                        key={idx}
-                        className="rounded-xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border p-3.5 text-[14px] leading-[22px] text-brand-dark dark:text-night-text transition-colors hover:border-brand-accent dark:hover:border-night-accent"
-                      >
-                        <span className="font-bold mr-2 tabular-nums">
-                          0{idx + 1}.
-                        </span>
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="space-y-3">
-                  <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
-                    Acciones y Responsables
-                  </h2>
-                  {doc.actionItems.length === 0 ? (
-                    <p className="text-[14px] text-brand-dark/70 dark:text-night-text/65">
-                      No se detectaron compromisos explícitos en este documento.
-                    </p>
-                  ) : (
-                    <div className="overflow-x-auto rounded-xl border border-brand-card dark:border-night-border">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-brand-light dark:bg-night-inset border-b border-brand-card dark:border-night-border text-[12px] font-semibold text-brand-dark dark:text-night-text">
-                            <th className="py-2.5 px-4">Responsable</th>
-                            <th className="py-2.5 px-4">Acción</th>
-                            <th className="py-2.5 px-4 text-right">Prioridad</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-brand-card/60 dark:divide-night-border text-[13px] text-brand-dark dark:text-night-text">
-                          {doc.actionItems.map((item, idx) => (
-                            <tr
+                {activeTab === "actions" && (
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
+                        Puntos Clave Sintetizados
+                      </h2>
+                      {doc.keyPoints.length === 0 ? (
+                        <p className="text-[14px] text-brand-dark/70 dark:text-night-text/65">
+                          No se registraron puntos clave adicionales.
+                        </p>
+                      ) : (
+                        <ul className="space-y-2.5">
+                          {doc.keyPoints.map((point, idx) => (
+                            <li
                               key={idx}
-                              className="hover:bg-brand-light/50 dark:hover:bg-night-elevated/50 transition-colors"
+                              className="rounded-xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border p-3.5 text-[14px] leading-[22px] text-brand-dark dark:text-night-text transition-colors hover:border-brand-accent dark:hover:border-night-accent"
                             >
-                              <td className="py-3 px-4 font-semibold whitespace-nowrap">
-                                {item.owner}
-                              </td>
-                              <td className="py-3 px-4 text-brand-dark/85 dark:text-night-text/80">
-                                {item.task}
-                              </td>
-                              <td className="py-3 px-4 text-right font-semibold whitespace-nowrap">
-                                {item.priority}
-                              </td>
-                            </tr>
+                              <span className="font-bold mr-2 tabular-nums">
+                                0{idx + 1}.
+                              </span>
+                              {point}
+                            </li>
                           ))}
-                        </tbody>
-                      </table>
+                        </ul>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
 
-            {activeTab === "source" && (
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-[13px] font-semibold text-brand-dark/70 dark:text-night-text/65">
-                    Fragmento del texto fuente procesado
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => onViewOriginal(doc)}
-                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand-primary dark:text-brand-accent hover:text-brand-dark dark:hover:text-white transition-colors"
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    <span>Abrir documento original</span>
-                  </button>
-                </div>
-                <div className="rounded-2xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border p-5 text-[13px] leading-[23px] text-brand-dark/90 dark:text-night-text/90 whitespace-pre-wrap">
-                  {doc.sourceExcerpt}
-                </div>
-              </div>
+                    <div className="space-y-3">
+                      <h2 className="font-display text-[16px] font-semibold text-brand-dark dark:text-night-text">
+                        Acciones y Responsables
+                      </h2>
+                      {doc.actionItems.length === 0 ? (
+                        <p className="text-[14px] text-brand-dark/70 dark:text-night-text/65">
+                          No se detectaron compromisos explícitos en este documento.
+                        </p>
+                      ) : (
+                        <div className="overflow-x-auto rounded-xl border border-brand-card dark:border-night-border">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="bg-brand-light dark:bg-night-inset border-b border-brand-card dark:border-night-border text-[12px] font-semibold text-brand-dark dark:text-night-text">
+                                <th className="py-2.5 px-4">Responsable</th>
+                                <th className="py-2.5 px-4">Acción</th>
+                                <th className="py-2.5 px-4 text-right">
+                                  Prioridad
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-brand-card/60 dark:divide-night-border text-[13px] text-brand-dark dark:text-night-text">
+                              {doc.actionItems.map((item, idx) => (
+                                <tr
+                                  key={idx}
+                                  className="hover:bg-brand-light/50 dark:hover:bg-night-elevated/50 transition-colors"
+                                >
+                                  <td className="py-3 px-4 font-semibold whitespace-nowrap">
+                                    {item.owner}
+                                  </td>
+                                  <td className="py-3 px-4 text-brand-dark/85 dark:text-night-text/80">
+                                    {item.task}
+                                  </td>
+                                  <td className="py-3 px-4 text-right font-semibold whitespace-nowrap">
+                                    {item.priority}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === "source" && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[13px] font-semibold text-brand-dark/70 dark:text-night-text/65">
+                        Fragmento del texto fuente procesado
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => onViewOriginal(doc)}
+                        className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-brand-primary dark:text-brand-accent hover:text-brand-dark dark:hover:text-white transition-colors"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Abrir texto completo</span>
+                      </button>
+                    </div>
+                    <div className="rounded-2xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border p-5 text-[13px] leading-[23px] text-brand-dark/90 dark:text-night-text/90 whitespace-pre-wrap">
+                      {doc.sourceExcerpt || "Sin extracto disponible."}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </article>
@@ -377,73 +324,29 @@ ${doc.sourceExcerpt}`;
             </div>
           </div>
 
-          <div className="rounded-2xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border p-5 space-y-4 shadow-sm">
+          <div className="rounded-2xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border p-5 space-y-3 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border">
-                <OctyMascot
-                  pose={isAsking ? "thinking" : askError ? "error" : "waving"}
-                  size={38}
-                />
+                <OctyMascot pose="waving" size={38} />
               </div>
-              <div>
-                <h2 className="font-display text-[14px] font-semibold text-brand-dark dark:text-night-text">
-                  Consultar con Octy
-                </h2>
-                <p className="text-[12px] text-brand-dark/70 dark:text-night-text/65">
-                  Haz preguntas sobre cifras, cláusulas o responsabilidades.
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-[14px] font-semibold text-brand-dark dark:text-night-text">
+                    Consultar con Octy
+                  </h2>
+                  <span className="rounded-full bg-brand-light dark:bg-night-elevated border border-brand-card dark:border-night-border px-2 py-0.5 text-[10px] font-bold text-brand-primary dark:text-brand-accent">
+                    Próximamente
+                  </span>
+                </div>
+                <p className="text-[12px] text-brand-dark/70 dark:text-night-text/65 mt-0.5">
+                  Chat interactivo sobre este documento en desarrollo.
                 </p>
               </div>
             </div>
 
-            {messages.length > 0 && (
-              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`animate-fade-up rounded-xl p-3 text-[13px] leading-[20px] ${
-                      msg.role === "user"
-                        ? "bg-brand-primary text-white ml-6 shadow-sm"
-                        : "bg-brand-light dark:bg-night-inset border border-brand-card dark:border-night-border text-brand-dark dark:text-night-text mr-4"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {askError && (
-              <p
-                className="animate-fade-up text-[12px] font-semibold text-brand-dark dark:text-night-text"
-                role="alert"
-              >
-                {askError}
-              </p>
-            )}
-
-            <form onSubmit={handleAskQuestion} className="flex items-center gap-2">
-              <input
-                type="text"
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                disabled={isAsking}
-                placeholder="Ej. ¿Cuál es la fecha límite?"
-                aria-label="Pregunta sobre el documento"
-                className="h-[42px] flex-1 rounded-xl bg-white dark:bg-night-inset border border-brand-card dark:border-night-border px-3 text-[13px] text-brand-dark dark:text-night-text placeholder:text-brand-accent dark:placeholder:text-night-text/45 transition-all duration-150 focus:outline-none focus:border-brand-primary dark:focus:border-brand-accent focus:shadow-[0_0_0_3px_rgba(127,196,242,0.28)]"
-              />
-              <button
-                type="submit"
-                disabled={isAsking || !question.trim()}
-                aria-label="Enviar consulta"
-                className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-brand-primary text-white shadow-sm shadow-brand-primary/25 hover:bg-brand-dark dark:hover:bg-[#519EE2] transition-all duration-150 active:scale-95 disabled:opacity-50"
-              >
-                {isAsking ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
-              </button>
-            </form>
+            <div className="rounded-xl bg-brand-light/70 dark:bg-night-inset border border-brand-card dark:border-night-border p-3 text-[12px] leading-[18px] text-brand-dark/75 dark:text-night-text/70">
+              Muy pronto podrás hacerle preguntas directas a Octy sobre cifras, cláusulas y responsabilidades de este documento.
+            </div>
           </div>
 
           <div className="rounded-2xl bg-white dark:bg-night-surface border border-brand-card dark:border-night-border p-5 space-y-3 shadow-sm">
