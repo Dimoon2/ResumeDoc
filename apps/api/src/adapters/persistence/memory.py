@@ -4,9 +4,12 @@ shortcut: los datos viven solo en memoria y se pierden al reiniciar;
 sustituir por el adaptador real de persistencia en T-18.
 """
 
+import threading
 from dataclasses import replace
+from datetime import datetime
 
 from src.domain.document import Document, DocumentState, fail
+from src.domain.refresh_token import RefreshToken
 from src.domain.user import User
 
 
@@ -61,6 +64,13 @@ class InMemoryDocumentRepository:
         self._documents_by_id[document_id] = renamed
         return renamed
 
+    def update_location(self, document_id: int, location: str) -> None:
+        document = self._documents_by_id.get(document_id)
+        if document is not None:
+            self._documents_by_id[document_id] = replace(
+                document, location=location
+            )
+
 
 class InMemoryDocumentStateStore:
     """Keeps pipeline states in a dictionary (double for tests)."""
@@ -84,3 +94,48 @@ class InMemoryDocumentStateStore:
 
     def delete(self, document_id: int) -> None:
         self._states.pop(document_id, None)
+
+
+class InMemoryRefreshTokenRepository:
+    """In-memory double of the refresh-token port (D-06).
+
+    `claim` runs under a lock so only one concurrent rotation can consume a
+    `jti`; the SQLModel adapter reproduces the same semantics with an atomic
+    `UPDATE ... WHERE fecha_uso IS NULL`.
+    """
+
+    def __init__(self) -> None:
+        self._tokens: dict[str, RefreshToken] = {}
+        self._lock = threading.Lock()
+
+    def create(self, token: RefreshToken) -> None:
+        with self._lock:
+            if token.jti in self._tokens:
+                raise ValueError(f"El jti {token.jti!r} ya existe.")
+            self._tokens[token.jti] = token
+
+    def get(self, jti: str) -> RefreshToken | None:
+        return self._tokens.get(jti)
+
+    def claim(self, jti: str, now: datetime) -> bool:
+        with self._lock:
+            token = self._tokens.get(jti)
+            if token is None or token.is_used():
+                return False
+            self._tokens[jti] = token.mark_used(now)
+            return True
+
+    def revoke_family(self, family: str, now: datetime) -> None:
+        with self._lock:
+            for jti, token in list(self._tokens.items()):
+                if token.family == family and not token.is_revoked():
+                    self._tokens[jti] = token.revoke(now)
+
+    def delete_expired(self, now: datetime) -> int:
+        with self._lock:
+            expired = [
+                jti for jti, token in self._tokens.items() if token.is_expired(now)
+            ]
+            for jti in expired:
+                del self._tokens[jti]
+            return len(expired)

@@ -1,15 +1,24 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: "DM Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: "Manrope", "DM Sans", system-ui, sans-serif;
-
-  /* Paleta Oficial (RNF-02 / CA-05) */ 
+  /* Paleta Modo Claro (RNF-02 / CA-05) */ 
   --color-brand-light: #EAF6FF;
   --color-brand-card: #BFE3FA;
   --color-brand-accent: #7FC4F2;
   --color-brand-primary: #3E8FD6;
   --color-brand-dark: #1E5A9C;
+
+   /* Paleta Modo Oscuro (Executive Midnight Azure) */
+  --color-night-canvas: #0B1626;
+  --color-night-surface: #112036;
+  --color-night-inset: #0E1A2C;
+  --color-night-border: #1E3654;
+  --color-night-elevated: #1A3352;
+  --color-night-accent: #326AA3;
+  --color-night-text: #E6F1FC;
 }
 
 :root {
@@ -108,6 +117,20 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .floating-chip { position: absolute; z-index: 2; right: -1px; bottom: 42px; display: flex; align-items: center; gap: 8px; padding: 12px 15px; color: #426782; background: white; border: 1px solid #e6f0f7; border-radius: 12px; box-shadow: 0 9px 25px #2e6a941c; font-size: 11px; font-weight: 700; }
 .floating-chip svg, .floating-spark { color: var(--blue-500); }
 .floating-spark { position: absolute; top: 38px; right: 37px; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: white; box-shadow: 0 8px 20px #2e6a941b; }
+.floating-octy {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 18px;
+  background: white;
+  border: 1px solid #e6f0f7;
+  box-shadow: 0 10px 26px #2e6a941f;
+}
 .hero-wave { position: absolute; bottom: -1px; left: -2%; width: 104%; height: 34px; border-radius: 50% 50% 0 0 / 100% 100% 0 0; background: white; }
 .section-pad { padding: 91px 0; }
 .section-heading { max-width: 610px; margin: 0 auto 45px; text-align: center; }
@@ -275,7 +298,15 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
-
+@media (max-width: 680px) {
+  .floating-octy {
+    top: 4px;
+    right: 6px;
+    width: 56px;
+    height: 56px;
+    border-radius: 15px;
+  }
+}
 .font-display {
   font-family: var(--font-display);
 }
@@ -393,4 +424,382 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 
 .floating-spark {
   animation: gentleFloat 3.8s ease-in-out 0.6s infinite;
+}
+
+/* ===== Botón de tema compartido (SiteHeader / AuthLayout) ===== */
+.nav-right {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  border: 1px solid #d5e5f2;
+  background: #ffffff;
+  color: var(--blue-700);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--blue-300);
+  color: var(--blue-500);
+  transform: translateY(-1px);
+}
+
+.auth-theme-bar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 680px) {
+  .auth-theme-bar {
+    justify-content: space-between;
+    width: min(100%, 410px);
+    margin-bottom: 32px;
+  }
+  .auth-theme-bar .auth-mobile-brand {
+    margin-bottom: 0;
+  }
+}
+
+/* ===== Sombras en Modo Oscuro ===== */
+.dark .shadow-azure-floating {
+  box-shadow: 0 8px 24px -4px rgba(3, 8, 18, 0.48), 0 2px 6px -1px rgba(3, 8, 18, 0.32);
+}
+
+.dark .shadow-azure-active {
+  box-shadow: 0 16px 36px -4px rgba(2, 6, 14, 0.68);
+}
+
+.dark .shadow-azure-dropzone {
+  box-shadow: 0 0 0 4px rgba(62, 143, 214, 0.35);
+}
+
+/* ===== Modo Oscuro Global: Landing, Auth y Loading ===== */
+html.dark,
+html.dark body {
+  background: #0B1626;
+  color: #E6F1FC;
+}
+
+html.dark .brand {
+  color: #E6F1FC;
+}
+
+html.dark .site-header {
+  background: rgba(11, 22, 38, 0.9);
+  border-bottom-color: #1E3654;
+  backdrop-filter: blur(10px);
+}
+
+html.dark .nav-links {
+  color: #B4CBE0;
+}
+
+html.dark .nav-links a:not(.button):hover {
+  color: #7FC4F2;
+}
+
+html.dark .mobile-menu-button {
+  color: #E6F1FC;
+}
+
+@media (max-width: 680px) {
+  html.dark .nav-links {
+    background: #112036;
+    border-bottom-color: #1E3654;
+    box-shadow: 0 15px 26px rgba(2, 6, 14, 0.55);
+  }
+}
+
+html.dark .theme-toggle-btn {
+  background: #112036;
+  border-color: #1E3654;
+  color: #E6F1FC;
+}
+
+html.dark .theme-toggle-btn:hover {
+  border-color: #7FC4F2;
+  color: #7FC4F2;
+  background: #1A3352;
+}
+
+html.dark .hero-section {
+  background: linear-gradient(125deg, #0B1626 0%, #0E1A2C 55%, #112036 100%);
+}
+
+html.dark .eyebrow {
+  color: #7FC4F2;
+}
+
+html.dark .hero-copy h1,
+html.dark .section-heading h2,
+html.dark .how-copy h2 {
+  color: #E6F1FC;
+}
+
+html.dark .hero-description,
+html.dark .section-heading p,
+html.dark .how-copy p,
+html.dark .hero-note {
+  color: #A3BDD6;
+}
+
+html.dark .button-primary {
+  background: #3E8FD6;
+  box-shadow: 0 7px 18px rgba(2, 6, 14, 0.4);
+}
+
+html.dark .button-primary:hover {
+  background: #519EE2;
+}
+
+html.dark .button-secondary {
+  background: #112036;
+  border-color: #1E3654;
+  color: #E6F1FC;
+}
+
+html.dark .button-secondary:hover {
+  border-color: #7FC4F2;
+  color: #7FC4F2;
+}
+
+html.dark .visual-orbit {
+  border-color: rgba(127, 196, 242, 0.16);
+}
+
+html.dark .dashboard-preview {
+  background: #112036;
+  border-color: #1E3654;
+  box-shadow: 0 24px 70px rgba(2, 6, 14, 0.65);
+}
+
+html.dark .preview-brand,
+html.dark .preview-file strong,
+html.dark .preview-insight strong {
+  color: #E6F1FC;
+}
+
+html.dark .preview-file small,
+html.dark .preview-section-label,
+html.dark .chart-legend,
+html.dark .preview-insight small {
+  color: #93B0CA;
+}
+
+html.dark .file-icon {
+  background: #0E1A2C;
+  color: #7FC4F2;
+}
+
+html.dark .preview-divider {
+  background: #1E3654;
+}
+
+html.dark .bar-chart {
+  border-bottom-color: #1E3654;
+}
+
+html.dark .preview-text-line {
+  background: #1A3352;
+}
+
+html.dark .preview-text-line.wide {
+  background: #24456E;
+}
+
+html.dark .preview-insight {
+  background: #0E1A2C;
+  border: 1px solid #1E3654;
+}
+
+html.dark .insight-icon {
+  background: #1A3352;
+  color: #7FC4F2;
+}
+
+html.dark .floating-chip,
+html.dark .floating-octy {
+  background: #112036;
+  border-color: #1E3654;
+  color: #E6F1FC;
+  box-shadow: 0 12px 28px rgba(2, 6, 14, 0.55);
+}
+
+html.dark .hero-wave {
+  background: #0B1626;
+}
+
+html.dark .features-section,
+html.dark .site-footer {
+  background: #0B1626;
+}
+
+html.dark .feature-card {
+  background: #112036;
+  border-color: #1E3654;
+}
+
+html.dark .feature-card:hover {
+  border-color: #326AA3;
+  box-shadow: 0 12px 28px rgba(2, 6, 14, 0.45);
+}
+
+html.dark .feature-card h3 {
+  color: #E6F1FC;
+}
+
+html.dark .feature-card p {
+  color: #9EB8D0;
+}
+
+html.dark .feature-icon {
+  background: #0E1A2C;
+  color: #7FC4F2;
+}
+
+html.dark .how-section {
+  background: #0E1A2C;
+}
+
+html.dark .steps-list,
+html.dark .step-item {
+  border-color: #1E3654;
+}
+
+html.dark .step-item h3 {
+  color: #E6F1FC;
+}
+
+html.dark .step-item p {
+  color: #9EB8D0;
+}
+
+html.dark .text-link {
+  color: #7FC4F2;
+}
+
+html.dark .cta-section {
+  background: linear-gradient(105deg, #123661, #1E5A9C);
+}
+
+html.dark .button-white {
+  background: #EAF6FF;
+  color: #1E5A9C;
+}
+
+html.dark .footer-inner > span {
+  color: #7C99B4;
+}
+
+/* Auth & Loading en Modo Oscuro */
+html.dark .auth-shell,
+html.dark .auth-main {
+  background: #0B1626;
+}
+
+html.dark .auth-aside {
+  background: linear-gradient(145deg, #0E1A2C 0%, #112036 100%);
+}
+
+html.dark .auth-aside-content h1 {
+  color: #E6F1FC;
+}
+
+html.dark .auth-aside-content > p,
+html.dark .auth-aside-footer {
+  color: #9BB5CE;
+}
+
+html.dark .illustration-paper {
+  background: #112036;
+  border-color: #1E3654;
+  box-shadow: 0 15px 40px rgba(2, 6, 14, 0.55);
+}
+
+html.dark .paper-line {
+  background: #1A3352;
+}
+
+html.dark .paper-line.line-long {
+  background: #24456E;
+}
+
+html.dark .paper-chart {
+  border-bottom-color: #1E3654;
+}
+
+html.dark .floating-note {
+  background: #112036;
+  border-color: #1E3654;
+  color: #E6F1FC;
+}
+
+html.dark .auth-heading h2,
+html.dark .success-card h2 {
+  color: #E6F1FC;
+}
+
+html.dark .auth-heading p,
+html.dark .success-card > p,
+html.dark .auth-switch,
+html.dark .auth-legal {
+  color: #93B0CA;
+}
+
+html.dark .form-field label {
+  color: #C7DCF0;
+}
+
+html.dark .input-wrap {
+  background: #112036;
+  border-color: #1E3654;
+}
+
+html.dark .input-wrap input {
+  color: #E6F1FC;
+}
+
+html.dark .input-wrap input::placeholder {
+  color: #6B89A6;
+}
+
+html.dark .input-icon,
+html.dark .password-toggle,
+html.dark .back-link {
+  color: #8CA8C3;
+}
+
+html.dark .auth-switch a,
+html.dark .form-options a,
+html.dark .back-link:hover {
+  color: #7FC4F2;
+}
+
+html.dark .form-alert {
+  background: rgba(189, 74, 74, 0.16);
+  color: #FCA5A5;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+html.dark .loading-screen {
+  background: #0B1626;
+  color: #9BB5CE;
+}
+
+html.dark .spinner {
+  border-color: #1E3654;
+  border-top-color: #3E8FD6;
 }

@@ -190,6 +190,7 @@ def test_process_pdf_completed_with_text(
 ) -> None:
     repository, storage, states = pipeline
     document = _add_document(repository, storage, build_textual_pdf("hola"), ".pdf")
+    original_binary = document.location
 
     process_document(repository, storage, states, FakeExtractor("TEXTO"), FakeOcr(), document.id)
 
@@ -197,6 +198,12 @@ def test_process_pdf_completed_with_text(
     assert state is not None and state.status == "completed"
     assert storage.read_text(state.text_path) == "TEXTO"
     assert can_edit(state)
+    # La BD referencia al texto procesado y el binario original se purga
+    # (decisión del equipo: el texto es el único contenido que se conserva).
+    processed = repository.get_document(document.id)
+    assert processed is not None and processed.location == state.text_path
+    with pytest.raises(FileNotFoundError):
+        storage.read(original_binary)
 
 
 def test_process_image_empty_text_is_completed_not_error(

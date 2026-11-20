@@ -7,17 +7,22 @@ spec D-06 (30 min access / 7 days refresh) and OCR language follows D-03 (spa).
 """
 
 from functools import lru_cache
+from pathlib import Path
 from urllib.parse import urlparse
 
 from pydantic import Field, ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# El `.env` vive en `apps/api/.env`: ruta absoluta para que los tests lo
+# encuentren igual ejecutados desde la raíz del repo o desde `apps/api`.
+_ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
     """Environment-driven settings for the API and the worker."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -53,6 +58,10 @@ class Settings(BaseSettings):
 
     # Orígenes permitidos para cookies con credenciales (frontend Vite, 5173).
     cors_origins: str = "http://localhost:5173"
+
+    # Cookies de sesión: `secure` solo puede ser `false` en desarrollo HTTP.
+    # En producción (HTTPS) debe configurarse COOKIE_SECURE=true.
+    cookie_secure: bool = False
 
     @field_validator(
         "database_url", "redis_url", "storage_dir", "jwt_secret", "ocr_lang"

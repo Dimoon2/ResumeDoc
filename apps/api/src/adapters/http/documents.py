@@ -173,7 +173,9 @@ def delete_document(
     states: DocumentStateStore = Depends(get_state_store),
     storage: FileStorage = Depends(get_storage),
 ) -> None:
-    """Delete the record, the stored binary and the pipeline state (D-24);
+    """Delete the record, the file referenced by `ubicacion` (the processed
+    text for completed documents, the original binary otherwise — the
+    binary is purged at processing time) and the pipeline state (D-24);
     409 while the worker is processing it (D-15)."""
     document = _accessible_document(repository.get_document(document_id), user)
     state = states.get(document_id)
@@ -187,7 +189,10 @@ def delete_document(
     states.delete(document_id)
 
 
+# PUT y PATCH guardan el mismo recurso: PUT es el contrato ya integrado en
+# el frontend; PATCH lo usa la vista de detalle (guardado automático).
 @router.put("/{document_id}/text", status_code=204)
+@router.patch("/{document_id}/text", status_code=204)
 def update_document_text(
     document_id: int,
     payload: UpdateTextRequest,
@@ -259,6 +264,25 @@ def summarize(
         reading_time_minutes=result.reading_time_minutes,
         source_excerpt=result.source_excerpt,
     )
+@router.post(
+    "/{document_id}/reprocess", response_model=DocumentResponse, status_code=202
+)
+def reprocess_document(
+    document_id: int,
+    user: AuthContext = Depends(current_user),
+    repository: DocumentRepository = Depends(get_repository),
+    states: DocumentStateStore = Depends(get_state_store),
+    storage: FileStorage = Depends(get_storage),
+) -> DocumentResponse:
+    """Regenerate the derived artifacts from the edited text: the document
+    shows `processing` like the normal pipeline (409 if not `completed` or
+    without text)."""
+    document = _accessible_document(repository.get_document(document_id), user)
+    try:
+        document_usecases.reprocess_document(storage, states, document.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return _to_response(document, states)
 
 
 @router.get("/{document_id}/status", response_model=DocumentStatusResponse)

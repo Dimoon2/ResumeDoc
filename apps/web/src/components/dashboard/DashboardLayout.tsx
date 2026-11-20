@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { CheckCircle2, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { ActiveNavSection, User } from "../../types/summary";
+import { OctyMascot } from "../ui/OctyMascot";
 import { ParticleNetwork } from "../ui/ParticleNetwork";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
@@ -45,7 +46,7 @@ export function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen flex bg-brand-light text-brand-dark font-sans overflow-x-hidden">
+    <div className="min-h-screen flex bg-brand-light dark:bg-night-canvas text-brand-dark dark:text-night-text font-sans overflow-x-hidden transition-colors duration-150">
       <Sidebar
         activeNav={activeNav}
         onSelectNav={onSelectNav}
@@ -58,7 +59,7 @@ export function DashboardLayout({
         onLogout={onLogout}
       />
 
-      <div className="relative flex-1 min-w-0 flex flex-col bg-[radial-gradient(circle_at_top_right,rgba(127,196,242,0.22),transparent_48%)] bg-brand-light text-brand-dark">
+      <div className="relative flex-1 min-w-0 flex flex-col bg-[radial-gradient(circle_at_top_right,rgba(127,196,242,0.22),transparent_48%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(62,143,214,0.14),transparent_48%)] bg-brand-light dark:bg-night-canvas text-brand-dark dark:text-night-text transition-colors duration-150">
         {/* Fondo animado Constellation / Particle Network */}
         <div
           aria-hidden="true"
@@ -82,19 +83,25 @@ export function DashboardLayout({
             {toastMessage && (
               <div
                 role="status"
-                className="animate-toast-in rounded-xl bg-white/95 backdrop-blur-sm border border-brand-primary px-4 py-3 flex items-center justify-between gap-3 shadow-azure-floating"
+                className="animate-toast-in rounded-xl bg-white/95 dark:bg-night-surface/95 backdrop-blur-sm border border-brand-primary dark:border-brand-accent/60 px-4 py-3 flex items-center justify-between gap-3 shadow-azure-floating"
               >
-                <div className="flex items-center gap-2.5 text-[13px] sm:text-[14px] font-semibold text-brand-dark min-w-0">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-light text-brand-primary">
-                    <CheckCircle2 className="h-4 w-4" />
-                  </span>
+                <div className="flex items-center gap-3 text-[13px] sm:text-[14px] font-semibold text-brand-dark dark:text-night-text min-w-0">
+                  <OctyMascot
+                    pose={
+                      toastMessage.includes("eliminado")
+                        ? "neutral"
+                        : "celebrating"
+                    }
+                    size={34}
+                    className="shrink-0"
+                  />
                   <span className="break-words">{toastMessage}</span>
                 </div>
                 <button
                   type="button"
                   onClick={onDismissToast}
                   aria-label="Cerrar notificación"
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 hover:bg-brand-light hover:text-brand-dark transition-colors active:scale-95"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-brand-dark/70 dark:text-night-text/70 hover:bg-brand-light dark:hover:bg-night-elevated hover:text-brand-dark dark:hover:text-night-text transition-colors active:scale-95"
                 >
                   <X className="h-4 w-4" />
                 </button>

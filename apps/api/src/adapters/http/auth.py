@@ -1,17 +1,22 @@
 """Auth endpoints aligned to the frontend contract (feat/Landing-Page-and-Auth):
 
-`POST /auth/login` / `POST /auth/register` → `{user}` + cookie HttpOnly;
-`GET /auth/me` → `{user}` desde la cookie; `POST /auth/logout` → borra la
-cookie. `POST /auth/refresh` se conserva (bearer, para clientes que no
-usen cookies). Registro propio permitido (D-28).
+`POST /auth/login` / `POST /auth/register` → `{user}` + `access_token` and
+`refresh_token` HttpOnly cookies; `GET /auth/me` → `{user}` from the access
+cookie; `POST /auth/refresh` rotates the refresh cookie (or body) and renews
+both cookies; `POST /auth/logout` revokes the family and clears both cookies.
+Registro propio permitido (D-28).
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from datetime import datetime, timezone
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from src.adapters.http.dependencies import (
+    REFRESH_COOKIE,
     SESSION_COOKIE,
     current_user,
     get_password_hasher,
+    get_refresh_repository,
     get_repository,
     get_token_service,
 )
@@ -25,12 +30,17 @@ from src.adapters.http.schemas import (
     UserResponse,
 )
 from src.application.ports.document_repository import DocumentRepository
+from src.application.ports.refresh_token_repository import RefreshTokenRepository
 from src.application.ports.security import PasswordHasher, TokenService
 from src.application.usecases import auth as auth_usecases
 from src.core.config import get_settings
+from src.domain.refresh_token import RefreshTokenError, TokenPair
 from src.domain.user import AuthContext, EmailAlreadyRegistered, User as DomainUser
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+# El refresh solo se envía a rutas bajo su propio prefijo.
+_REFRESH_COOKIE_PATH = "/auth"
 
 
 def _user_response(user: DomainUser) -> UserResponse:
@@ -48,15 +58,44 @@ def _session(repository: DocumentRepository, user_id: int) -> AuthSessionRespons
     return AuthSessionResponse(user=_user_response(user))
 
 
-def _set_cookie(response: Response, token: str) -> None:
+def _set_session_cookies(response: Response, pair: TokenPair) -> None:
+    """Set both HttpOnly cookies; the refresh one uses the remaining lifetime."""
+    settings = get_settings()
     response.set_cookie(
         SESSION_COOKIE,
-        token,
-        max_age=get_settings().jwt_access_ttl,
+        pair.access,
+        max_age=settings.jwt_access_ttl,
+        path="/",
         httponly=True,
         samesite="lax",
-        # secure=False para desarrollo HTTP; activar en producción HTTPS.
+        secure=settings.cookie_secure,
     )
+    max_age = 0
+    if pair.refresh_expires_at is not None:
+        remaining = pair.refresh_expires_at - datetime.now(timezone.utc)
+        max_age = max(0, int(remaining.total_seconds()))
+    response.set_cookie(
+        REFRESH_COOKIE,
+        pair.refresh,
+        max_age=max_age,
+        path=_REFRESH_COOKIE_PATH,
+        httponly=True,
+        samesite="lax",
+        secure=settings.cookie_secure,
+    )
+
+
+def _clear_session_cookies(response: Response) -> None:
+    """Delete both cookies with the same paths they were created with."""
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(REFRESH_COOKIE, path=_REFRESH_COOKIE_PATH)
+
+
+def _raw_refresh(request: Request, payload: RefreshRequest | None) -> str | None:
+    """Body wins (bearer clients); otherwise the HttpOnly cookie."""
+    if payload is not None and payload.refresh_token:
+        return payload.refresh_token
+    return request.cookies.get(REFRESH_COOKIE)
 
 
 @router.post("/login", response_model=AuthSessionResponse)
@@ -66,15 +105,21 @@ def login(
     repository: DocumentRepository = Depends(get_repository),
     hasher: PasswordHasher = Depends(get_password_hasher),
     tokens: TokenService = Depends(get_token_service),
+    refresh_repo: RefreshTokenRepository = Depends(get_refresh_repository),
 ) -> AuthSessionResponse:
     """Exchange credentials for a session cookie + the user payload."""
     session = auth_usecases.login(
-        repository, hasher, tokens, payload.email, payload.password
+        repository,
+        hasher,
+        tokens,
+        refresh_repo,
+        payload.email,
+        payload.password,
     )
     if session is None:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas.")
-    user, access_token, _refresh = session  # refresh: para clientes bearer
-    _set_cookie(response, access_token)
+    user, pair = session
+    _set_session_cookies(response, pair)
     return AuthSessionResponse(user=_user_response(user))
 
 
@@ -85,6 +130,7 @@ def register(
     repository: DocumentRepository = Depends(get_repository),
     hasher: PasswordHasher = Depends(get_password_hasher),
     tokens: TokenService = Depends(get_token_service),
+    refresh_repo: RefreshTokenRepository = Depends(get_refresh_repository),
 ) -> AuthSessionResponse:
     """Self-registration (D-28): creates a `user` account and logs in."""
     try:
@@ -93,7 +139,8 @@ def register(
         )
     except EmailAlreadyRegistered as exc:
         raise HTTPException(status_code=409, detail=str(exc))
-    _set_cookie(response, tokens.create_access_token(user))
+    pair = auth_usecases.issue_session(user, refresh_repo, tokens)
+    _set_session_cookies(response, pair)
     return AuthSessionResponse(user=_user_response(user))
 
 
@@ -107,10 +154,18 @@ def me(
 
 
 @router.post("/logout", status_code=204)
-def logout() -> Response:
-    """Clear the session cookie."""
+def logout(
+    request: Request,
+    payload: RefreshRequest | None = None,
+    refresh_repo: RefreshTokenRepository = Depends(get_refresh_repository),
+    tokens: TokenService = Depends(get_token_service),
+) -> Response:
+    """Revoke the session family (cookie or body) and clear both cookies."""
+    auth_usecases.logout_session(
+        refresh_repo, tokens, _raw_refresh(request, payload)
+    )
     response = Response(status_code=204)
-    response.delete_cookie(SESSION_COOKIE)
+    _clear_session_cookies(response)
     return response
 
 
@@ -126,19 +181,31 @@ def forgot_password(payload: ForgotPasswordRequest) -> dict[str, str]:
 
 @router.post("/refresh", response_model=AccessTokenResponse)
 def refresh(
-    payload: RefreshRequest,
+    request: Request,
+    response: Response,
+    payload: RefreshRequest | None = None,
     repository: DocumentRepository = Depends(get_repository),
     tokens: TokenService = Depends(get_token_service),
+    refresh_repo: RefreshTokenRepository = Depends(get_refresh_repository),
 ) -> AccessTokenResponse:
-    """Renew the access token from a valid refresh token (bearer flow)."""
-    access_token = auth_usecases.refresh_access_token(
-        repository,
-        tokens,
-        payload.refresh_token,
-    )
-    if access_token is None:
+    """Rotate the refresh token from the body (bearer) or the cookie."""
+    raw_refresh = _raw_refresh(request, payload)
+    if raw_refresh is None:
         raise HTTPException(
             status_code=401,
             detail="Token de actualización inválido o expirado.",
         )
-    return AccessTokenResponse(access_token=access_token)
+    try:
+        _user, pair = auth_usecases.rotate_session(
+            refresh_repo,
+            repository,
+            tokens,
+            raw_refresh,
+        )
+    except RefreshTokenError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token de actualización inválido o expirado.",
+        )
+    _set_session_cookies(response, pair)
+    return AccessTokenResponse(access_token=pair.access)

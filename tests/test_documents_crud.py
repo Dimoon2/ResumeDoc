@@ -245,3 +245,75 @@ def test_delete_removes_record_file_and_state(client: TestClient) -> None:
     other = _second_user(client)
     foreign = client.delete(f"/documents/{document_id}", headers=other)
     assert foreign.status_code == 404
+
+
+def test_patch_alias_saves_corrected_text(client: TestClient) -> None:
+    upload = client.post(
+        "/documents", headers=_auth(client),
+        files={"file": ("informe.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+
+    saved = client.patch(
+        f"/documents/{document_id}/text", headers=_auth(client),
+        json={"text": "texto corregido en la vista de detalle"},
+    )
+    assert saved.status_code == 204
+
+    text = client.get(f"/documents/{document_id}/text", headers=_auth(client))
+    assert text.status_code == 200
+    assert text.text == "texto corregido en la vista de detalle"
+
+
+def test_reprocess_sets_processing_then_completes(client: TestClient) -> None:
+    upload = client.post(
+        "/documents", headers=_auth(client),
+        files={"file": ("informe.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+    client.patch(
+        f"/documents/{document_id}/text", headers=_auth(client),
+        json={"text": "TEXTO EDITADO"},
+    )
+
+    reprocessed = client.post(
+        f"/documents/{document_id}/reprocess", headers=_auth(client)
+    )
+    assert reprocessed.status_code == 202
+    assert reprocessed.json()["status"] == "completed"
+
+    # El texto editado se conserva y el estado vuelve a completed (polling).
+    text = client.get(f"/documents/{document_id}/text", headers=_auth(client))
+    assert text.text == "TEXTO EDITADO"
+    status = client.get(f"/documents/{document_id}/status", headers=_auth(client))
+    assert status.json()["status"] == "completed"
+
+
+def test_reprocess_errors(client: TestClient) -> None:
+    upload = client.post(
+        "/documents", headers=_auth(client),
+        files={"file": ("informe.pdf", b"%PDF-1.4", "application/pdf")},
+    )
+    document_id = upload.json()["id"]
+
+    other = _second_user(client)
+    foreign = client.post(f"/documents/{document_id}/reprocess", headers=other)
+    assert foreign.status_code == 404
+
+    from src.domain.document import DocumentState
+
+    # Sin estado (pendiente) → 409.
+    pending = app.state.repository.create_document(
+        Document(name="p.pdf", location="x.pdf", size_bytes=1, owner_id=1)
+    )
+    not_ready = client.post(f"/documents/{pending.id}/reprocess", headers=_auth(client))
+    assert not_ready.status_code == 409
+
+    # Completado sin texto (D-09) → 409.
+    empty = app.state.repository.create_document(
+        Document(name="vacio.pdf", location="y.pdf", size_bytes=1, owner_id=1)
+    )
+    app.state.state_store.set(empty.id, DocumentState("completed"))
+    no_text = client.post(f"/documents/{empty.id}/reprocess", headers=_auth(client))
+    assert no_text.status_code == 409
+    assert no_text.json()["detail"] == "El documento no tiene texto para reprocesar."

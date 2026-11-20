@@ -54,7 +54,9 @@ class AuthSessionResponse(BaseModel):
 
 
 class RefreshRequest(BaseModel):
-    refresh_token: str
+    """Optional body so the browser can rely only on the refresh cookie."""
+
+    refresh_token: str | None = None
 
 
 class ForgotPasswordRequest(BaseModel):
