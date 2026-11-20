@@ -1,0 +1,158 @@
+"""Pydantic schemas of the HTTP API (user-visible messages stay in Spanish)."""
+
+import re
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+# Frontend contract (feat/Landing-Page-and-Auth): AuthResponse {user}.
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    """Self-registration (D-28: sin permisos, solo ve sus propios documentos)."""
+
+    name: str
+    email: str
+    password: str
+
+    @field_validator("name")
+    @classmethod
+    def name_not_empty(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Introduce tu nombre.")
+        return value
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, value: str) -> str:
+        if not _EMAIL_RE.match(value):
+            raise ValueError("Introduce un correo válido.")
+        return value
+
+    @field_validator("password")
+    @classmethod
+    def password_min_length(cls, value: str) -> str:
+        if len(value) < 8:
+            raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+        return value
+
+
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+
+
+class AuthSessionResponse(BaseModel):
+    user: UserResponse
+
+
+class RefreshRequest(BaseModel):
+    """Optional body so the browser can rely only on the refresh cookie."""
+
+    refresh_token: str | None = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, value: str) -> str:
+        if not _EMAIL_RE.match(value):
+            raise ValueError("Introduce un correo válido.")
+        return value
+
+
+class AccessTokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UploadedDocumentResponse(BaseModel):
+    id: int
+    status: Literal["pending"] = "pending"  # estado de aplicación, no de BD (D-24)
+
+
+class DocumentStatusResponse(BaseModel):
+    id: int
+    status: str
+    error: str = ""
+
+
+class DocumentResponse(BaseModel):
+    """Metadata + pipeline state of a document (list, detail and rename)."""
+
+    id: int
+    name: str
+    size_bytes: int
+    status: str = "pending"
+    error: str = ""
+
+
+class RenameDocumentRequest(BaseModel):
+    name: str
+
+    @field_validator("name")
+    @classmethod
+    def valid_name(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("El nombre no puede estar vacío.")
+        if len(stripped) > 255:
+            raise ValueError("El nombre no puede exceder 255 caracteres.")
+        return stripped
+
+
+class UpdateTextRequest(BaseModel):
+    text: str
+
+
+class SummarizeRequest(BaseModel):
+    depth: Literal["executive", "detailed", "bullets"] = "executive"
+
+
+class TextSummaryRequest(BaseModel):
+    """Request used to summarize pasted text without uploading a file."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    file_name: str = Field(alias="fileName", min_length=1, max_length=255)
+    text_content: str = Field(
+        alias="textContent", min_length=1, max_length=2_000_000
+    )
+    depth: Literal["executive", "detailed", "bullets"] = "executive"
+
+    @field_validator("file_name")
+    @classmethod
+    def valid_file_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("El nombre del documento es obligatorio.")
+        return value.strip()
+
+    @field_validator("text_content")
+    @classmethod
+    def valid_text_content(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("El contenido del documento es obligatorio.")
+        return value
+
+
+class SummaryResponse(BaseModel):
+    """Summary generated on demand from a completed document's extracted text."""
+
+    id: str
+    executive_summary: str
+    key_points: list[str]
+    action_items: list[dict[str, str]]
+    topics: list[str]
+    word_count_original: int
+    word_count_summary: int
+    reading_time_minutes: int
+    source_excerpt: str

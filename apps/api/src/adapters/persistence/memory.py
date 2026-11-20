@@ -1,0 +1,141 @@
+"""In-memory double of DocumentRepository for tests and local runs (T-07).
+
+shortcut: los datos viven solo en memoria y se pierden al reiniciar;
+sustituir por el adaptador real de persistencia en T-18.
+"""
+
+import threading
+from dataclasses import replace
+from datetime import datetime
+
+from src.domain.document import Document, DocumentState, fail
+from src.domain.refresh_token import RefreshToken
+from src.domain.user import User
+
+
+class InMemoryDocumentRepository:
+    """Keeps users and documents in dictionaries (T-07)."""
+
+    def __init__(self) -> None:
+        self._next_user_id: int = 1
+        self._users_by_id: dict[int, User] = {}
+        self._users_by_email: dict[str, User] = {}
+        self._next_document_id: int = 1
+        self._documents_by_id: dict[int, Document] = {}
+
+    def create_user(self, user: User) -> User:
+        # shortcut: contador simple; el adaptador real usa el PK autoincremental (T-18)
+        persisted = replace(user, id=self._next_user_id)
+        self._next_user_id += 1
+        self._users_by_id[persisted.id] = persisted
+        self._users_by_email[persisted.email] = persisted
+        return persisted
+
+    def get_user_by_email(self, email: str) -> User | None:
+        return self._users_by_email.get(email)
+
+    def get_user(self, user_id: int) -> User | None:
+        return self._users_by_id.get(user_id)
+
+    def create_document(self, document: Document) -> Document:
+        # shortcut: contador simple; el adaptador real usa el PK autoincremental (T-18)
+        persisted = replace(document, id=self._next_document_id)
+        self._next_document_id += 1
+        self._documents_by_id[persisted.id] = persisted
+        return persisted
+
+    def get_document(self, document_id: int) -> Document | None:
+        return self._documents_by_id.get(document_id)
+
+    def delete_document(self, document_id: int) -> None:
+        self._documents_by_id.pop(document_id, None)
+
+    def list_documents(self, owner_id: int | None = None) -> list[Document]:
+        documents = self._documents_by_id.values()
+        if owner_id is None:
+            return list(documents)
+        return [doc for doc in documents if doc.owner_id == owner_id]
+
+    def rename_document(self, document_id: int, name: str) -> Document | None:
+        document = self._documents_by_id.get(document_id)
+        if document is None:
+            return None
+        renamed = replace(document, name=name)
+        self._documents_by_id[document_id] = renamed
+        return renamed
+
+    def update_location(self, document_id: int, location: str) -> None:
+        document = self._documents_by_id.get(document_id)
+        if document is not None:
+            self._documents_by_id[document_id] = replace(
+                document, location=location
+            )
+
+
+class InMemoryDocumentStateStore:
+    """Keeps pipeline states in a dictionary (double for tests)."""
+
+    def __init__(self) -> None:
+        self._states: dict[int, DocumentState] = {}
+
+    def get(self, document_id: int) -> DocumentState | None:
+        return self._states.get(document_id)
+
+    def set(self, document_id: int, state: DocumentState) -> None:
+        self._states[document_id] = state
+
+    def fail_processing(self, message: str) -> int:
+        count = 0
+        for document_id, state in self._states.items():
+            if state.status == "processing":
+                self._states[document_id] = fail(state, message)
+                count += 1
+        return count
+
+    def delete(self, document_id: int) -> None:
+        self._states.pop(document_id, None)
+
+
+class InMemoryRefreshTokenRepository:
+    """In-memory double of the refresh-token port (D-06).
+
+    `claim` runs under a lock so only one concurrent rotation can consume a
+    `jti`; the SQLModel adapter reproduces the same semantics with an atomic
+    `UPDATE ... WHERE fecha_uso IS NULL`.
+    """
+
+    def __init__(self) -> None:
+        self._tokens: dict[str, RefreshToken] = {}
+        self._lock = threading.Lock()
+
+    def create(self, token: RefreshToken) -> None:
+        with self._lock:
+            if token.jti in self._tokens:
+                raise ValueError(f"El jti {token.jti!r} ya existe.")
+            self._tokens[token.jti] = token
+
+    def get(self, jti: str) -> RefreshToken | None:
+        return self._tokens.get(jti)
+
+    def claim(self, jti: str, now: datetime) -> bool:
+        with self._lock:
+            token = self._tokens.get(jti)
+            if token is None or token.is_used():
+                return False
+            self._tokens[jti] = token.mark_used(now)
+            return True
+
+    def revoke_family(self, family: str, now: datetime) -> None:
+        with self._lock:
+            for jti, token in list(self._tokens.items()):
+                if token.family == family and not token.is_revoked():
+                    self._tokens[jti] = token.revoke(now)
+
+    def delete_expired(self, now: datetime) -> int:
+        with self._lock:
+            expired = [
+                jti for jti, token in self._tokens.items() if token.is_expired(now)
+            ]
+            for jti in expired:
+                del self._tokens[jti]
+            return len(expired)
